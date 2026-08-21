@@ -14,6 +14,7 @@ Aqui documento minha evolução desde os fundamentos de Git e Docker até pipeli
 ## Estrutura
 
 - `aula-01/` — Fundamentos de Git e Docker
+- `aula-02/` — Docker Compose (API + PostgreSQL + Redis) + IA como Copiloto DevOps
 
 ## Aprendizados
 
