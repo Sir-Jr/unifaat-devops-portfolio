@@ -1,0 +1,87 @@
+services:
+  # ================================
+  # Serviço: API TechNova (Node.js + Express)
+  # ================================
+  api:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: technova-api
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB:-technova}
+      - DB_USER=${POSTGRES_USER:-technova}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - technova-network
+    restart: unless-stopped
+
+  # ================================
+  # Serviço: PostgreSQL (banco de dados)
+  # ================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: technova-db
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-technova}
+      - POSTGRES_USER=${POSTGRES_USER:-technova}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Volume nomeado: persiste os dados entre `docker compose down` e `up`
+      - pgdata:/var/lib/postgresql/data
+      # Schema + seed executados apenas na primeira inicialização do volume
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - technova-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-technova} -d ${POSTGRES_DB:-technova}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ================================
+  # Serviço: Redis (cache)
+  # ================================
+  redis:
+    image: redis:7-alpine
+    container_name: technova-cache
+    ports:
+      - "6379:6379"
+    networks:
+      - technova-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+# ================================
+# Redes
+# ================================
+networks:
+  technova-network:
+    driver: bridge
+
+# ================================
+# Volumes (persistência)
+# ================================
+volumes:
+  pgdata:
+    driver: local
