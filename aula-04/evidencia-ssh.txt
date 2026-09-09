@@ -1,0 +1,9 @@
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+v18.20.8
+{
+    "UserId": "AROAZER6RDLQ6CZWF5RFK:i-0e3385f5bd1a067ea",
+    "Account": "628270111457",
+    "Arn": "arn:aws:sts::628270111457:assumed-role/LabRole/i-0e3385f5bd1a067ea"
+}
