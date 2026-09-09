@@ -87,20 +87,16 @@ terraform destroy
 
 ### Nota sobre o ambiente — restrição de IAM do AWS Academy
 
-O código em `main.tf` inclui o desenho de IAM pedido pelo exercício (`aws_iam_role.ec2_role` com
-trust policy para `ec2.amazonaws.com` + policy `AmazonS3ReadOnlyAccess` + `aws_iam_instance_profile`
-próprios). O `terraform plan` mostra esses 3 recursos como "a criar" (evidência em
-`terraform-plan-output.txt`), mas o `terraform apply` retorna `AccessDenied` em `iam:CreateRole` —
-a mesma restrição intencional da role `voclabs` já documentada na
-[aula 03](../aula-03/README.md#nota-sobre-o-ambiente): o Learner Lab bloqueia qualquer escrita em
-IAM por segurança.
-
-Para a EC2 ficar de fato funcional (evidência de API rodando), a instância usa o
-`LabInstanceProfile` pré-provisionado pela própria AWS Academy, cuja role (`LabRole`) já aceita
-`ec2.amazonaws.com` como principal e tem permissões amplas o suficiente (incluindo S3). Isso está
-explícito em `main.tf` — o `data "aws_iam_instance_profile" "lab"` é o que de fato é anexado ao
-`aws_instance.api`, enquanto o role customizado permanece no código como o design "de produção"
-pretendido, documentado e versionado, mesmo sem poder ser aplicado nesta sandbox.
+A role `voclabs` do AWS Academy Learner Lab tem Deny explícito para `iam:CreateRole` — a mesma
+restrição já documentada na [aula 03](../aula-03/README.md#nota-sobre-o-ambiente). Por isso, ao
+contrário do que o roteiro original do exercício sugere, `main.tf` **não cria** `aws_iam_role`,
+`aws_iam_role_policy_attachment` nem `aws_iam_instance_profile` próprios — a EC2 referencia
+diretamente o `LabInstanceProfile` pré-provisionado pela própria AWS Academy
+(`iam_instance_profile = "LabInstanceProfile"`), cuja role (`LabRole`) já aceita
+`ec2.amazonaws.com` como principal. Essa é a orientação oficial atualizada do
+[Lab Parte 2](../../aula-04/laboratorio-parte2.md) desta aula para ambientes Learner Lab, e o
+resultado é o mesmo pedido pelo exercício: `terraform apply` sem erros e a role confirmada via
+`aws sts get-caller-identity` dentro da instância (evidência em `evidencia-ssh.txt`).
 
 ## Recursos Criados
 
@@ -115,6 +111,4 @@ pretendido, documentado e versionado, mesmo sem poder ser aplicado nesta sandbox
 | `aws_security_group` | technova-db-sg | Libera PostgreSQL (5432) só de dentro da VPC |
 | `aws_key_pair` | technova-key | Chave SSH registrada na AWS |
 | `data.aws_ami` | amazon_linux | Busca a AMI mais recente do Amazon Linux 2023 |
-| `data.aws_iam_instance_profile` | lab | Referencia o LabInstanceProfile pré-existente (ver nota acima) |
-| `aws_iam_role` + `aws_iam_role_policy_attachment` + `aws_iam_instance_profile` | 6325269-technova-ec2-* | Design de menor privilégio pretendido (bloqueado no apply pelo sandbox) |
-| `aws_instance` | technova-api-ec2 | EC2 t2.micro rodando a API TechNova na porta 3000 |
+| `aws_instance` | technova-api-ec2 | EC2 t2.micro rodando a API TechNova na porta 3000, com `iam_instance_profile = "LabInstanceProfile"` (ver nota acima) |

@@ -176,57 +176,20 @@ resource "aws_key_pair" "main" {
 }
 
 # =============================================================
-# IAM ROLE + INSTANCE PROFILE — S3 ReadOnly para a EC2
-# =============================================================
-
-data "aws_iam_policy_document" "ec2_assume_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "ec2_role" {
-  name               = "${var.ra}-technova-ec2-role"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
-  tags               = local.common_tags
-}
-
-resource "aws_iam_role_policy_attachment" "ec2_s3_read" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
-}
-
-resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "${var.ra}-technova-ec2-profile"
-  role = aws_iam_role.ec2_role.name
-  tags = local.common_tags
-}
-
-# A role voclabs do AWS Academy Learner Lab tem Deny explícito para iam:CreateRole,
-# então os 3 recursos acima nunca aplicam neste ambiente (ver README). Para a EC2
-# ficar funcional mesmo assim, usamos o LabInstanceProfile pré-provisionado pela
-# AWS Academy (role LabRole já aceita ec2.amazonaws.com como principal).
-data "aws_iam_instance_profile" "lab" {
-  name = "LabInstanceProfile"
-}
-
-# =============================================================
 # EC2 — API TechNova na subnet pública
 # =============================================================
 
+# O AWS Academy Learner Lab bloqueia iam:CreateRole (Deny explícito na role voclabs),
+# então não criamos aws_iam_role/aws_iam_instance_profile próprios — usamos o
+# LabInstanceProfile pré-provisionado pela AWS Academy (role LabRole já aceita
+# ec2.amazonaws.com como principal), conforme orientado no Lab Parte 2 desta aula.
 resource "aws_instance" "api" {
   ami                    = data.aws_ami.amazon_linux.id
   instance_type          = var.instance_type
   subnet_id              = aws_subnet.public[0].id
   vpc_security_group_ids = [aws_security_group.api.id]
   key_name               = aws_key_pair.main.key_name
-  iam_instance_profile   = data.aws_iam_instance_profile.lab.name
+  iam_instance_profile   = "LabInstanceProfile"
   user_data              = file("${path.module}/user_data.sh")
 
   tags = merge(local.common_tags, {

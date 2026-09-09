@@ -3,7 +3,7 @@
 ** The server may need to be upgraded. See https://openssh.com/pq.html
 v18.20.8
 {
-    "UserId": "AROAZER6RDLQ6CZWF5RFK:i-0e3385f5bd1a067ea",
+    "UserId": "AROAZER6RDLQ6CZWF5RFK:i-05a01183d64065fb6",
     "Account": "628270111457",
-    "Arn": "arn:aws:sts::628270111457:assumed-role/LabRole/i-0e3385f5bd1a067ea"
+    "Arn": "arn:aws:sts::628270111457:assumed-role/LabRole/i-05a01183d64065fb6"
 }
