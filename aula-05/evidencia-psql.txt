@@ -1,0 +1,18 @@
+$ ssh -i ~/.ssh/technova-key ec2-user@100.26.185.177 "psql --version"
+psql (PostgreSQL) 15.19
+
+$ ssh -i ~/.ssh/technova-key ec2-user@100.26.185.177 \
+    "psql -h technova-db.cdh757g9f6xp.us-east-1.rds.amazonaws.com -U technova_admin -d technova -p 5432 -c 'SELECT version();'"
+                                              version
+---------------------------------------------------------------------------------------------------
+ PostgreSQL 15.17 on x86_64-pc-linux-gnu, compiled by x86_64-pc-linux-gnu-gcc (GCC) 12.4.0, 64-bit
+(1 row)
+
+$ ssh -i ~/.ssh/technova-key ec2-user@100.26.185.177 \
+    "psql -h technova-db.cdh757g9f6xp.us-east-1.rds.amazonaws.com -U technova_admin -d technova -p 5432 -c 'SELECT * FROM orders;'"
+ id | customer_name |       product       | quantity |  total  |         created_at
+----+---------------+---------------------+----------+---------+----------------------------
+  1 | Maria Silva   | Laptop TechNova Pro |        1 | 4599.90 | 2026-09-11 00:56:28.619877
+  2 | Joao Santos   | Monitor 27pol       |        2 | 2398.00 | 2026-09-11 00:56:28.619877
+  3 | Ana Costa     | Teclado Mecanico    |        3 |  897.00 | 2026-09-11 00:56:28.619877
+(3 rows)

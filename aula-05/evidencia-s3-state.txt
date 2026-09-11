@@ -1,0 +1,42 @@
+$ aws s3 ls s3://technova-terraform-state-d849bd92/aula-05/
+2026-09-10 21:55:36      36262 terraform.tfstate
+
+$ aws s3api get-bucket-versioning --bucket technova-terraform-state-d849bd92
+{
+    "Status": "Enabled"
+}
+
+$ aws s3api get-bucket-encryption --bucket technova-terraform-state-d849bd92
+{
+    "ServerSideEncryptionConfiguration": {
+        "Rules": [
+            {
+                "ApplyServerSideEncryptionByDefault": {
+                    "SSEAlgorithm": "aws:kms"
+                },
+                "BucketKeyEnabled": true
+            }
+        ]
+    }
+}
+
+$ aws s3api get-public-access-block --bucket technova-terraform-state-d849bd92
+{
+    "PublicAccessBlockConfiguration": {
+        "BlockPublicAcls": true,
+        "IgnorePublicAcls": true,
+        "BlockPublicPolicy": true,
+        "RestrictPublicBuckets": true
+    }
+}
+
+$ aws dynamodb describe-table --table-name technova-terraform-locks --query 'Table.{Status:TableStatus,Key:KeySchema}'
+{
+    "Status": "ACTIVE",
+    "Key": [
+        {
+            "AttributeName": "LockID",
+            "KeyType": "HASH"
+        }
+    ]
+}

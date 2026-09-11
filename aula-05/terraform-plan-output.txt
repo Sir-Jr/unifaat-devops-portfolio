@@ -1,0 +1,15 @@
+$ terraform init && terraform validate && terraform plan
+
+Terraform has been successfully initialized!
+Success! The configuration is valid.
+
+Acquiring state lock. This may take a few moments...
+data.aws_ami.amazon_linux: Reading...
+data.aws_availability_zones.available: Reading...
+data.aws_availability_zones.available: Read complete after 1s [id=us-east-1]
+data.aws_ami.amazon_linux: Read complete after 1s [id=ami-0b5358cc8c5df0b02]
+
+No changes. Your infrastructure matches the configuration.
+
+Terraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
