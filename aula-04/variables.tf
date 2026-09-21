@@ -41,9 +41,15 @@ variable "instance_type" {
 }
 
 variable "public_key_path" {
-  description = "Caminho local da chave pública SSH registrada na AWS"
+  description = "Caminho local da chave pública SSH registrada na AWS (ignorado se public_key for informada)"
   type        = string
   default     = "~/.ssh/technova-key.pub"
+}
+
+variable "public_key" {
+  description = "Conteúdo da chave pública SSH; use em CI/CD (TF_VAR_public_key) em vez de depender de um caminho local"
+  type        = string
+  default     = null
 }
 
 locals {

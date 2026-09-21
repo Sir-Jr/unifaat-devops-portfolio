@@ -40,6 +40,7 @@ VPC: 10.0.0.0/16
 - AWS CLI configurado com credenciais do AWS Academy Learner Lab (`~/.aws/credentials`)
 - Terraform >= 1.0
 - Chave SSH gerada: `ssh-keygen -t rsa -b 4096 -f ~/.ssh/technova-key -N ""`
+- Em CI/CD, sem acesso ao `~/.ssh` local, informe o conteúdo da chave via `TF_VAR_public_key` (tem precedência sobre `public_key_path`)
 
 ### Comandos
 

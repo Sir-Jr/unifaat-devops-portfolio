@@ -168,7 +168,7 @@ data "aws_ami" "amazon_linux" {
 
 resource "aws_key_pair" "main" {
   key_name   = "technova-key"
-  public_key = file(var.public_key_path)
+  public_key = var.public_key != null ? var.public_key : file(var.public_key_path)
 
   tags = merge(local.common_tags, {
     Name = "technova-key"
