@@ -63,11 +63,3 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
-
-locals {
-  common_tags = {
-    Project = "TechNova"
-    Aula    = "05"
-    Owner   = var.ra
-  }
-}
