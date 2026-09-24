@@ -1,0 +1,16 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+.terraform.lock.hcl
+
+# terraform.tfvars de cada ambiente É versionado (não contém segredos).
+# A senha do banco vem de TF_VAR_db_password.
+
+# Credenciais AWS Academy / chaves (NUNCA versionar)
+aws-creds.sh
+*.pem
+*.key
+.env
