@@ -33,6 +33,18 @@ públicas/privadas) e uma instância rodando a API TechNova na porta 3000.
 VPC: 10.0.0.0/16
 ```
 
+## Arquivos do Projeto
+
+| Arquivo | Conteúdo |
+|---|---|
+| `providers.tf` | Provider AWS e versão do Terraform |
+| `variables.tf` | Variáveis (região, CIDRs, AZs, tipo da instância, chave SSH) e `locals` com as tags comuns |
+| `main.tf` | VPC, subnets, IGW, route tables, security groups, key pair e EC2 |
+| `outputs.tf` | IDs da rede, IP público, URL da API e comando SSH |
+| [`user_data.sh`](user_data.sh) | Script executado no boot da EC2 (`user_data = file("${path.module}/user_data.sh")`): instala Node.js 18, cria a API Express em `/opt/technova-api` com as rotas `/`, `/health` e `/orders` e sobe o processo na porta 3000. Log em `/var/log/technova-setup.log` |
+| `terraform-plan-output.txt` | Saída do `terraform plan` |
+| `evidencia-api.txt` / `evidencia-ssh.txt` | Saída dos testes com `curl` e SSH na instância |
+
 ## Como usar
 
 ### Pré-requisitos
