@@ -289,6 +289,10 @@ As evidências de `validate` e `plan` dos dois ambientes estão em
 [`terraform-plan-dev.txt`](terraform-plan-dev.txt) e
 [`terraform-plan-staging.txt`](terraform-plan-staging.txt) (19 recursos cada).
 
+O ambiente **dev** também foi aplicado no Learner Lab e destruído em seguida:
+[`terraform-apply-dev.txt`](terraform-apply-dev.txt) (19 recursos criados, com os outputs) e
+[`terraform-destroy-dev.txt`](terraform-destroy-dev.txt) (19 recursos removidos).
+
 ### Criar um novo ambiente (ex: prod)
 
 1. Copie a pasta de um ambiente existente:

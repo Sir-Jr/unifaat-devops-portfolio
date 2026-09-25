@@ -1,0 +1,662 @@
+data.aws_ami.amazon_linux: Reading...
+data.aws_ami.amazon_linux: Read complete after 2s [id=ami-0a2601fa32a0e773d]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # module.api_server.aws_instance.this will be created
+  + resource "aws_instance" "this" {
+      + ami                                  = "ami-0a2601fa32a0e773d"
+      + arn                                  = (known after apply)
+      + associate_public_ip_address          = (known after apply)
+      + availability_zone                    = (known after apply)
+      + cpu_core_count                       = (known after apply)
+      + cpu_threads_per_core                 = (known after apply)
+      + disable_api_stop                     = (known after apply)
+      + disable_api_termination              = (known after apply)
+      + ebs_optimized                        = (known after apply)
+      + enable_primary_ipv6                  = (known after apply)
+      + get_password_data                    = false
+      + host_id                              = (known after apply)
+      + host_resource_group_arn              = (known after apply)
+      + iam_instance_profile                 = (known after apply)
+      + id                                   = (known after apply)
+      + instance_initiated_shutdown_behavior = (known after apply)
+      + instance_lifecycle                   = (known after apply)
+      + instance_state                       = (known after apply)
+      + instance_type                        = "t2.micro"
+      + ipv6_address_count                   = (known after apply)
+      + ipv6_addresses                       = (known after apply)
+      + key_name                             = "vockey"
+      + monitoring                           = (known after apply)
+      + outpost_arn                          = (known after apply)
+      + password_data                        = (known after apply)
+      + placement_group                      = (known after apply)
+      + placement_partition_number           = (known after apply)
+      + primary_network_interface_id         = (known after apply)
+      + private_dns                          = (known after apply)
+      + private_ip                           = (known after apply)
+      + public_dns                           = (known after apply)
+      + public_ip                            = (known after apply)
+      + secondary_private_ips                = (known after apply)
+      + security_groups                      = (known after apply)
+      + source_dest_check                    = true
+      + spot_instance_request_id             = (known after apply)
+      + subnet_id                            = (known after apply)
+      + tags                                 = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-api"
+          + "Project"     = "technova"
+        }
+      + tags_all                             = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-api"
+          + "Project"     = "technova"
+        }
+      + tenancy                              = (known after apply)
+      + user_data                            = "55b8be136695472eece49f03287e7c16b1f3a58c"
+      + user_data_base64                     = (known after apply)
+      + user_data_replace_on_change          = false
+      + vpc_security_group_ids               = (known after apply)
+
+      + capacity_reservation_specification (known after apply)
+
+      + cpu_options (known after apply)
+
+      + ebs_block_device (known after apply)
+
+      + enclave_options (known after apply)
+
+      + ephemeral_block_device (known after apply)
+
+      + instance_market_options (known after apply)
+
+      + maintenance_options (known after apply)
+
+      + metadata_options (known after apply)
+
+      + network_interface (known after apply)
+
+      + private_dns_name_options (known after apply)
+
+      + root_block_device (known after apply)
+    }
+
+  # module.api_sg.aws_security_group.this will be created
+  + resource "aws_security_group" "this" {
+      + arn                    = (known after apply)
+      + description            = "HTTP e SSH para a API"
+      + egress                 = (known after apply)
+      + id                     = (known after apply)
+      + ingress                = (known after apply)
+      + name                   = "technova-dev-api-sg"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-api-sg"
+          + "Project"     = "technova"
+        }
+      + tags_all               = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-api-sg"
+          + "Project"     = "technova"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # module.api_sg.aws_security_group_rule.egress[0] will be created
+  + resource "aws_security_group_rule" "egress" {
+      + cidr_blocks              = [
+          + "0.0.0.0/0",
+        ]
+      + description              = "Allow all outbound"
+      + from_port                = 0
+      + id                       = (known after apply)
+      + protocol                 = "-1"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 0
+      + type                     = "egress"
+    }
+
+  # module.api_sg.aws_security_group_rule.ingress[0] will be created
+  + resource "aws_security_group_rule" "ingress" {
+      + cidr_blocks              = [
+          + "0.0.0.0/0",
+        ]
+      + description              = "HTTP from anywhere"
+      + from_port                = 80
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 80
+      + type                     = "ingress"
+    }
+
+  # module.api_sg.aws_security_group_rule.ingress[1] will be created
+  + resource "aws_security_group_rule" "ingress" {
+      + cidr_blocks              = [
+          + "0.0.0.0/0",
+        ]
+      + description              = "SSH"
+      + from_port                = 22
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 22
+      + type                     = "ingress"
+    }
+
+  # module.database.aws_db_instance.this will be created
+  + resource "aws_db_instance" "this" {
+      + address                               = (known after apply)
+      + allocated_storage                     = 20
+      + apply_immediately                     = true
+      + arn                                   = (known after apply)
+      + auto_minor_version_upgrade            = true
+      + availability_zone                     = (known after apply)
+      + backup_retention_period               = 0
+      + backup_target                         = (known after apply)
+      + backup_window                         = (known after apply)
+      + ca_cert_identifier                    = (known after apply)
+      + character_set_name                    = (known after apply)
+      + copy_tags_to_snapshot                 = false
+      + database_insights_mode                = (known after apply)
+      + db_name                               = "technova_dev"
+      + db_subnet_group_name                  = "technova-dev-db-subnet-group"
+      + dedicated_log_volume                  = false
+      + delete_automated_backups              = true
+      + deletion_protection                   = false
+      + domain_fqdn                           = (known after apply)
+      + endpoint                              = (known after apply)
+      + engine                                = "postgres"
+      + engine_lifecycle_support              = (known after apply)
+      + engine_version                        = "15"
+      + engine_version_actual                 = (known after apply)
+      + hosted_zone_id                        = (known after apply)
+      + id                                    = (known after apply)
+      + identifier                            = "technova-dev-db"
+      + identifier_prefix                     = (known after apply)
+      + instance_class                        = "db.t3.micro"
+      + iops                                  = (known after apply)
+      + kms_key_id                            = (known after apply)
+      + latest_restorable_time                = (known after apply)
+      + license_model                         = (known after apply)
+      + listener_endpoint                     = (known after apply)
+      + maintenance_window                    = (known after apply)
+      + master_user_secret                    = (known after apply)
+      + master_user_secret_kms_key_id         = (known after apply)
+      + monitoring_interval                   = 0
+      + monitoring_role_arn                   = (known after apply)
+      + multi_az                              = false
+      + nchar_character_set_name              = (known after apply)
+      + network_type                          = (known after apply)
+      + option_group_name                     = (known after apply)
+      + parameter_group_name                  = (known after apply)
+      + password                              = (sensitive value)
+      + password_wo                           = (write-only attribute)
+      + performance_insights_enabled          = false
+      + performance_insights_kms_key_id       = (known after apply)
+      + performance_insights_retention_period = (known after apply)
+      + port                                  = 5432
+      + publicly_accessible                   = false
+      + replica_mode                          = (known after apply)
+      + replicas                              = (known after apply)
+      + resource_id                           = (known after apply)
+      + skip_final_snapshot                   = true
+      + snapshot_identifier                   = (known after apply)
+      + status                                = (known after apply)
+      + storage_encrypted                     = true
+      + storage_throughput                    = (known after apply)
+      + storage_type                          = "gp2"
+      + tags                                  = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-db"
+          + "Project"     = "technova"
+        }
+      + tags_all                              = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-db"
+          + "Project"     = "technova"
+        }
+      + timezone                              = (known after apply)
+      + username                              = "technova_admin"
+      + vpc_security_group_ids                = (known after apply)
+    }
+
+  # module.database.aws_db_subnet_group.this will be created
+  + resource "aws_db_subnet_group" "this" {
+      + arn                     = (known after apply)
+      + description             = "Managed by Terraform"
+      + id                      = (known after apply)
+      + name                    = "technova-dev-db-subnet-group"
+      + name_prefix             = (known after apply)
+      + subnet_ids              = (known after apply)
+      + supported_network_types = (known after apply)
+      + tags                    = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-db-subnet-group"
+          + "Project"     = "technova"
+        }
+      + tags_all                = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-db-subnet-group"
+          + "Project"     = "technova"
+        }
+      + vpc_id                  = (known after apply)
+    }
+
+  # module.rds_sg.aws_security_group.this will be created
+  + resource "aws_security_group" "this" {
+      + arn                    = (known after apply)
+      + description            = "PostgreSQL apenas a partir do SG da API"
+      + egress                 = (known after apply)
+      + id                     = (known after apply)
+      + ingress                = (known after apply)
+      + name                   = "technova-dev-rds-sg"
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-rds-sg"
+          + "Project"     = "technova"
+        }
+      + tags_all               = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-rds-sg"
+          + "Project"     = "technova"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # module.rds_sg.aws_security_group_rule.egress[0] will be created
+  + resource "aws_security_group_rule" "egress" {
+      + cidr_blocks              = [
+          + "0.0.0.0/0",
+        ]
+      + description              = "Allow all outbound"
+      + from_port                = 0
+      + id                       = (known after apply)
+      + protocol                 = "-1"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 0
+      + type                     = "egress"
+    }
+
+  # module.rds_sg.aws_security_group_rule.ingress[0] will be created
+  + resource "aws_security_group_rule" "ingress" {
+      + description              = "PostgreSQL from API SG"
+      + from_port                = 5432
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 5432
+      + type                     = "ingress"
+    }
+
+  # module.vpc.aws_internet_gateway.main will be created
+  + resource "aws_internet_gateway" "main" {
+      + arn      = (known after apply)
+      + id       = (known after apply)
+      + owner_id = (known after apply)
+      + tags     = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-igw"
+          + "Project"     = "technova"
+        }
+      + tags_all = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-igw"
+          + "Project"     = "technova"
+        }
+      + vpc_id   = (known after apply)
+    }
+
+  # module.vpc.aws_route_table.public will be created
+  + resource "aws_route_table" "public" {
+      + arn              = (known after apply)
+      + id               = (known after apply)
+      + owner_id         = (known after apply)
+      + propagating_vgws = (known after apply)
+      + route            = [
+          + {
+              + cidr_block                 = "0.0.0.0/0"
+              + gateway_id                 = (known after apply)
+                # (11 unchanged attributes hidden)
+            },
+        ]
+      + tags             = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-public-rt"
+          + "Project"     = "technova"
+        }
+      + tags_all         = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-public-rt"
+          + "Project"     = "technova"
+        }
+      + vpc_id           = (known after apply)
+    }
+
+  # module.vpc.aws_route_table_association.public["public-1"] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.vpc.aws_route_table_association.public["public-2"] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.vpc.aws_subnet.this["private-1"] will be created
+  + resource "aws_subnet" "this" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-east-1a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.3.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-private-1"
+          + "Project"     = "technova"
+          + "Type"        = "private"
+        }
+      + tags_all                                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-private-1"
+          + "Project"     = "technova"
+          + "Type"        = "private"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.vpc.aws_subnet.this["private-2"] will be created
+  + resource "aws_subnet" "this" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-east-1b"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.4.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-private-2"
+          + "Project"     = "technova"
+          + "Type"        = "private"
+        }
+      + tags_all                                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-private-2"
+          + "Project"     = "technova"
+          + "Type"        = "private"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.vpc.aws_subnet.this["public-1"] will be created
+  + resource "aws_subnet" "this" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-east-1a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.1.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = true
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-public-1"
+          + "Project"     = "technova"
+          + "Type"        = "public"
+        }
+      + tags_all                                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-public-1"
+          + "Project"     = "technova"
+          + "Type"        = "public"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.vpc.aws_subnet.this["public-2"] will be created
+  + resource "aws_subnet" "this" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-east-1b"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.2.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = true
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + tags                                           = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-public-2"
+          + "Project"     = "technova"
+          + "Type"        = "public"
+        }
+      + tags_all                                       = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-public-2"
+          + "Project"     = "technova"
+          + "Type"        = "public"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.vpc.aws_vpc.main will be created
+  + resource "aws_vpc" "main" {
+      + arn                                  = (known after apply)
+      + cidr_block                           = "10.0.0.0/16"
+      + default_network_acl_id               = (known after apply)
+      + default_route_table_id               = (known after apply)
+      + default_security_group_id            = (known after apply)
+      + dhcp_options_id                      = (known after apply)
+      + enable_dns_hostnames                 = true
+      + enable_dns_support                   = true
+      + enable_network_address_usage_metrics = (known after apply)
+      + id                                   = (known after apply)
+      + instance_tenancy                     = "default"
+      + ipv6_association_id                  = (known after apply)
+      + ipv6_cidr_block                      = (known after apply)
+      + ipv6_cidr_block_network_border_group = (known after apply)
+      + main_route_table_id                  = (known after apply)
+      + owner_id                             = (known after apply)
+      + tags                                 = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-vpc"
+          + "Project"     = "technova"
+        }
+      + tags_all                             = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "terraform"
+          + "Name"        = "technova-dev-vpc"
+          + "Project"     = "technova"
+        }
+    }
+
+Plan: 19 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + api_instance_id    = (known after apply)
+  + api_public_ip      = (known after apply)
+  + api_sg_id          = (known after apply)
+  + db_endpoint        = (known after apply)
+  + db_name            = "technova_dev"
+  + private_subnet_ids = [
+      + (known after apply),
+      + (known after apply),
+    ]
+  + public_subnet_ids  = [
+      + (known after apply),
+      + (known after apply),
+    ]
+  + rds_sg_id          = (known after apply)
+  + vpc_id             = (known after apply)
+module.vpc.aws_vpc.main: Creating...
+module.vpc.aws_vpc.main: Still creating... [00m10s elapsed]
+module.vpc.aws_vpc.main: Creation complete after 13s [id=vpc-0eb0fa408363d87b3]
+module.vpc.aws_internet_gateway.main: Creating...
+module.vpc.aws_subnet.this["private-1"]: Creating...
+module.vpc.aws_subnet.this["public-1"]: Creating...
+module.vpc.aws_subnet.this["public-2"]: Creating...
+module.vpc.aws_subnet.this["private-2"]: Creating...
+module.rds_sg.aws_security_group.this: Creating...
+module.api_sg.aws_security_group.this: Creating...
+module.vpc.aws_subnet.this["private-1"]: Creation complete after 2s [id=subnet-05f8da68859c7a83b]
+module.vpc.aws_internet_gateway.main: Creation complete after 2s [id=igw-06b519dd4dfd54b29]
+module.vpc.aws_route_table.public: Creating...
+module.vpc.aws_route_table.public: Creation complete after 2s [id=rtb-0b0f51c02115dff31]
+module.api_sg.aws_security_group.this: Creation complete after 4s [id=sg-0c1560ab190de43c7]
+module.api_sg.aws_security_group_rule.ingress[0]: Creating...
+module.api_sg.aws_security_group_rule.ingress[1]: Creating...
+module.api_sg.aws_security_group_rule.egress[0]: Creating...
+module.rds_sg.aws_security_group.this: Creation complete after 4s [id=sg-0478b8b10bc9117fd]
+module.rds_sg.aws_security_group_rule.egress[0]: Creating...
+module.rds_sg.aws_security_group_rule.ingress[0]: Creating...
+module.api_sg.aws_security_group_rule.ingress[0]: Creation complete after 1s [id=sgrule-3132630736]
+module.vpc.aws_subnet.this["private-2"]: Creation complete after 5s [id=subnet-09cacca4aa5a54fe6]
+module.rds_sg.aws_security_group_rule.ingress[0]: Creation complete after 1s [id=sgrule-3697640326]
+module.api_sg.aws_security_group_rule.ingress[1]: Creation complete after 2s [id=sgrule-204634981]
+module.rds_sg.aws_security_group_rule.egress[0]: Creation complete after 2s [id=sgrule-400713550]
+module.api_sg.aws_security_group_rule.egress[0]: Creation complete after 3s [id=sgrule-274178809]
+module.vpc.aws_subnet.this["public-1"]: Still creating... [00m10s elapsed]
+module.vpc.aws_subnet.this["public-2"]: Still creating... [00m10s elapsed]
+module.vpc.aws_subnet.this["public-2"]: Creation complete after 12s [id=subnet-0ea555c67b463bf09]
+module.vpc.aws_subnet.this["public-1"]: Creation complete after 13s [id=subnet-07b330272fdd0e805]
+module.vpc.aws_route_table_association.public["public-2"]: Creating...
+module.vpc.aws_route_table_association.public["public-1"]: Creating...
+module.database.aws_db_subnet_group.this: Creating...
+module.api_server.aws_instance.this: Creating...
+module.vpc.aws_route_table_association.public["public-2"]: Creation complete after 0s [id=rtbassoc-02d58a17ed168dcaa]
+module.vpc.aws_route_table_association.public["public-1"]: Creation complete after 0s [id=rtbassoc-0d95b9f41198488ad]
+module.database.aws_db_subnet_group.this: Creation complete after 2s [id=technova-dev-db-subnet-group]
+module.database.aws_db_instance.this: Creating...
+module.api_server.aws_instance.this: Still creating... [00m10s elapsed]
+module.database.aws_db_instance.this: Still creating... [00m10s elapsed]
+module.api_server.aws_instance.this: Creation complete after 14s [id=i-006e16bd7652623e8]
+module.database.aws_db_instance.this: Still creating... [00m20s elapsed]
+module.database.aws_db_instance.this: Still creating... [00m30s elapsed]
+module.database.aws_db_instance.this: Still creating... [00m40s elapsed]
+module.database.aws_db_instance.this: Still creating... [00m50s elapsed]
+module.database.aws_db_instance.this: Still creating... [01m00s elapsed]
+module.database.aws_db_instance.this: Still creating... [01m10s elapsed]
+module.database.aws_db_instance.this: Still creating... [01m20s elapsed]
+module.database.aws_db_instance.this: Still creating... [01m30s elapsed]
+module.database.aws_db_instance.this: Still creating... [01m40s elapsed]
+module.database.aws_db_instance.this: Still creating... [01m50s elapsed]
+module.database.aws_db_instance.this: Still creating... [02m00s elapsed]
+module.database.aws_db_instance.this: Still creating... [02m10s elapsed]
+module.database.aws_db_instance.this: Still creating... [02m20s elapsed]
+module.database.aws_db_instance.this: Still creating... [02m30s elapsed]
+module.database.aws_db_instance.this: Still creating... [02m40s elapsed]
+module.database.aws_db_instance.this: Still creating... [02m50s elapsed]
+module.database.aws_db_instance.this: Still creating... [03m00s elapsed]
+module.database.aws_db_instance.this: Still creating... [03m10s elapsed]
+module.database.aws_db_instance.this: Still creating... [03m20s elapsed]
+module.database.aws_db_instance.this: Still creating... [03m30s elapsed]
+module.database.aws_db_instance.this: Still creating... [03m40s elapsed]
+module.database.aws_db_instance.this: Still creating... [03m50s elapsed]
+module.database.aws_db_instance.this: Still creating... [04m00s elapsed]
+module.database.aws_db_instance.this: Still creating... [04m10s elapsed]
+module.database.aws_db_instance.this: Still creating... [04m20s elapsed]
+module.database.aws_db_instance.this: Still creating... [04m30s elapsed]
+module.database.aws_db_instance.this: Still creating... [04m40s elapsed]
+module.database.aws_db_instance.this: Still creating... [04m50s elapsed]
+module.database.aws_db_instance.this: Still creating... [05m00s elapsed]
+module.database.aws_db_instance.this: Creation complete after 5m0s [id=db-X52ANMDHATI4QNCDMARQKPMQRI]
+
+Apply complete! Resources: 19 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+api_instance_id = "i-006e16bd7652623e8"
+api_public_ip = "52.207.159.125"
+api_sg_id = "sg-0c1560ab190de43c7"
+db_endpoint = "technova-dev-db.cznvwwmjmtsr.us-east-1.rds.amazonaws.com:5432"
+db_name = "technova_dev"
+private_subnet_ids = [
+  "subnet-05f8da68859c7a83b",
+  "subnet-09cacca4aa5a54fe6",
+]
+public_subnet_ids = [
+  "subnet-07b330272fdd0e805",
+  "subnet-0ea555c67b463bf09",
+]
+rds_sg_id = "sg-0478b8b10bc9117fd"
+vpc_id = "vpc-0eb0fa408363d87b3"
