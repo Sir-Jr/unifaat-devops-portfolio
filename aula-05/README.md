@@ -63,11 +63,12 @@ terraform apply
 
 ### 2 — Projeto principal (VPC + RDS + EC2)
 
-Preencha `providers.tf` (bloco `backend "s3"`) com o `s3_bucket_name` obtido acima, crie um
-`terraform.tfvars` local (não versionado) com a senha do banco:
+Preencha `providers.tf` (bloco `backend "s3"`) com o `s3_bucket_name` obtido acima e crie o
+`terraform.tfvars` local (não versionado) a partir do modelo, definindo a senha do banco:
 
-```hcl
-db_password = "SuaSenhaForte!"
+```bash
+cp terraform.tfvars.example terraform.tfvars
+# edite db_password = "SuaSenhaForte!"
 ```
 
 Depois:

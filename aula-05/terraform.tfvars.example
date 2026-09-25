@@ -1,0 +1,17 @@
+# Copie para terraform.tfvars (não versionado) e ajuste os valores:
+#   cp terraform.tfvars.example terraform.tfvars
+
+# Obrigatória (sem default)
+db_password = "CHANGE_ME"
+
+# Opcionais — os valores abaixo são os defaults de variables.tf
+# aws_region           = "us-east-1"
+# project_name         = "technova"
+# ra                   = "6325269"
+# vpc_cidr             = "10.0.0.0/16"
+# public_subnet_cidr   = "10.0.1.0/24"
+# private_subnet_cidrs = ["10.0.2.0/24", "10.0.4.0/24"]
+# instance_type        = "t2.micro"
+# public_key_path      = "~/.ssh/technova-key.pub"
+# db_name              = "technova"
+# db_username          = "technova_admin"
