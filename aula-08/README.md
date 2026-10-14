@@ -86,3 +86,4 @@ Configurado em **Settings → Secrets and variables → Actions** com valor fict
 | `screenshots/screenshot-pipeline-passing.png` | pipeline completo verde |
 | `screenshots/screenshot-pipeline-failing.png` | pipeline falhando por erro intencional |
 | `screenshots/screenshot-secrets-configured.png` | tela de secrets (nomes visíveis, valores ocultos) |
+| `screenshots/screenshot-pr-comment.png` | comentário automático do CI no PR de teste #1 (bônus B3) |
