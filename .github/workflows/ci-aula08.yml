@@ -1,0 +1,196 @@
+name: CI Pipeline — Aula 08
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'aula-08/technova-api/**'
+      - '.github/workflows/ci-aula08.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'aula-08/technova-api/**'
+      - '.github/workflows/ci-aula08.yml'
+  workflow_dispatch:
+
+# B4 — cancela execuções anteriores da mesma branch/PR ainda em andamento
+concurrency:
+  group: ci-aula08-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: aula-08/technova-api
+
+jobs:
+  lint:
+    name: Lint (ESLint)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      # B2 — cache do npm baseado no package-lock.json
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: aula-08/technova-api/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar ESLint
+        run: npm run lint
+
+  test:
+    name: Tests (Jest, Node ${{ matrix.node-version }})
+    needs: lint
+    runs-on: ubuntu-latest
+
+    # B1 — testes em Node 18 e Node 20
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['18', '20']
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: aula-08/technova-api/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Executar testes com coverage
+        run: npm run test:ci
+
+      - name: Upload do relatório de coverage
+        if: always() && matrix.node-version == '20'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: aula-08/technova-api/coverage/
+          retention-days: 14
+
+  build:
+    name: Build (Docker)
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      # R5 — secret do repositório; o valor aparece como *** no log
+      - name: Verificar secret AWS_REGION
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          if [ -z "$AWS_REGION" ]; then
+            echo "Secret AWS_REGION não configurado"
+            exit 1
+          fi
+          echo "Região configurada via secret: $AWS_REGION"
+
+      - name: Build da imagem Docker
+        run: docker build -t technova-api:${{ github.sha }} .
+
+      - name: Listar imagem criada
+        run: docker images technova-api
+
+      # B5 — sobe o container e consulta o health check
+      - name: Smoke test do container
+        run: |
+          docker run -d --name technova-smoke -p 3000:3000 technova-api:${{ github.sha }}
+          for i in $(seq 1 10); do
+            if curl -fsS http://localhost:3000/health; then
+              echo
+              echo "Health check OK"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Health check falhou"
+          docker logs technova-smoke
+          exit 1
+
+      - name: Parar e remover o container
+        if: always()
+        run: docker rm -f technova-smoke || true
+
+  # B3 — comenta o resultado do pipeline no PR (atualiza o mesmo comentário)
+  pr-comment:
+    name: Comentário no PR
+    needs: [lint, test, build]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Publicar resultado do CI
+        uses: actions/github-script@v7
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        with:
+          script: |
+            const icone = (r) => ({
+              success: '✅ Passou',
+              failure: '❌ Falhou',
+              cancelled: '⚪ Cancelado',
+              skipped: '⏭️ Não executado',
+            }[r] || r);
+
+            const marcador = '<!-- ci-aula08 -->';
+            const runUrl = `${context.payload.repository.html_url}/actions/runs/${context.runId}`;
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+
+            const body = [
+              marcador,
+              '## CI Pipeline — Aula 08',
+              '',
+              '| Estágio | Resultado |',
+              '|---------|-----------|',
+              `| Lint (ESLint) | ${icone(process.env.LINT_RESULT)} |`,
+              `| Tests (Jest, Node 18 e 20) | ${icone(process.env.TEST_RESULT)} |`,
+              `| Build (Docker + smoke test) | ${icone(process.env.BUILD_RESULT)} |`,
+              '',
+              `**Commit:** \`${sha}\` · [Ver execução](${runUrl})`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const anterior = comments.find((c) => c.body.includes(marcador));
+
+            if (anterior) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: anterior.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
