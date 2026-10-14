@@ -29,7 +29,7 @@ Terraform will perform the following actions:
   # module.api_server.aws_instance.this will be destroyed
   - resource "aws_instance" "this" {
       - ami                                  = "ami-0a2601fa32a0e773d" -> null
-      - arn                                  = "arn:aws:ec2:us-east-1:381267323226:instance/i-006e16bd7652623e8" -> null
+      - arn                                  = "arn:aws:ec2:us-east-1:************:instance/i-006e16bd7652623e8" -> null
       - associate_public_ip_address          = true -> null
       - availability_zone                    = "us-east-1a" -> null
       - cpu_core_count                       = 1 -> null
@@ -130,7 +130,7 @@ Terraform will perform the following actions:
 
   # module.api_sg.aws_security_group.this will be destroyed
   - resource "aws_security_group" "this" {
-      - arn                    = "arn:aws:ec2:us-east-1:381267323226:security-group/sg-0c1560ab190de43c7" -> null
+      - arn                    = "arn:aws:ec2:us-east-1:************:security-group/sg-0c1560ab190de43c7" -> null
       - description            = "HTTP e SSH para a API" -> null
       - egress                 = [
           - {
@@ -177,7 +177,7 @@ Terraform will perform the following actions:
             },
         ] -> null
       - name                   = "technova-dev-api-sg" -> null
-      - owner_id               = "381267323226" -> null
+      - owner_id               = "************" -> null
       - revoke_rules_on_delete = false -> null
       - tags                   = {
           - "Environment" = "dev"
@@ -248,7 +248,7 @@ Terraform will perform the following actions:
       - address                               = "technova-dev-db.cznvwwmjmtsr.us-east-1.rds.amazonaws.com" -> null
       - allocated_storage                     = 20 -> null
       - apply_immediately                     = true -> null
-      - arn                                   = "arn:aws:rds:us-east-1:381267323226:db:technova-dev-db" -> null
+      - arn                                   = "arn:aws:rds:us-east-1:************:db:technova-dev-db" -> null
       - auto_minor_version_upgrade            = true -> null
       - availability_zone                     = "us-east-1b" -> null
       - backup_retention_period               = 0 -> null
@@ -276,7 +276,7 @@ Terraform will perform the following actions:
       - identifier                            = "technova-dev-db" -> null
       - instance_class                        = "db.t3.micro" -> null
       - iops                                  = 0 -> null
-      - kms_key_id                            = "arn:aws:kms:us-east-1:381267323226:key/4d37a9d6-d41a-42ac-a1d0-36651378c6ca" -> null
+      - kms_key_id                            = "arn:aws:kms:us-east-1:************:key/4d37a9d6-d41a-42ac-a1d0-36651378c6ca" -> null
       - license_model                         = "postgresql-license" -> null
       - listener_endpoint                     = [] -> null
       - maintenance_window                    = "wed:03:00-wed:03:30" -> null
@@ -321,7 +321,7 @@ Terraform will perform the following actions:
 
   # module.database.aws_db_subnet_group.this will be destroyed
   - resource "aws_db_subnet_group" "this" {
-      - arn                     = "arn:aws:rds:us-east-1:381267323226:subgrp:technova-dev-db-subnet-group" -> null
+      - arn                     = "arn:aws:rds:us-east-1:************:subgrp:technova-dev-db-subnet-group" -> null
       - description             = "Managed by Terraform" -> null
       - id                      = "technova-dev-db-subnet-group" -> null
       - name                    = "technova-dev-db-subnet-group" -> null
@@ -350,7 +350,7 @@ Terraform will perform the following actions:
 
   # module.rds_sg.aws_security_group.this will be destroyed
   - resource "aws_security_group" "this" {
-      - arn                    = "arn:aws:ec2:us-east-1:381267323226:security-group/sg-0478b8b10bc9117fd" -> null
+      - arn                    = "arn:aws:ec2:us-east-1:************:security-group/sg-0478b8b10bc9117fd" -> null
       - description            = "PostgreSQL apenas a partir do SG da API" -> null
       - egress                 = [
           - {
@@ -384,7 +384,7 @@ Terraform will perform the following actions:
             },
         ] -> null
       - name                   = "technova-dev-rds-sg" -> null
-      - owner_id               = "381267323226" -> null
+      - owner_id               = "************" -> null
       - revoke_rules_on_delete = false -> null
       - tags                   = {
           - "Environment" = "dev"
@@ -434,9 +434,9 @@ Terraform will perform the following actions:
 
   # module.vpc.aws_internet_gateway.main will be destroyed
   - resource "aws_internet_gateway" "main" {
-      - arn      = "arn:aws:ec2:us-east-1:381267323226:internet-gateway/igw-06b519dd4dfd54b29" -> null
+      - arn      = "arn:aws:ec2:us-east-1:************:internet-gateway/igw-06b519dd4dfd54b29" -> null
       - id       = "igw-06b519dd4dfd54b29" -> null
-      - owner_id = "381267323226" -> null
+      - owner_id = "************" -> null
       - tags     = {
           - "Environment" = "dev"
           - "ManagedBy"   = "terraform"
@@ -454,9 +454,9 @@ Terraform will perform the following actions:
 
   # module.vpc.aws_route_table.public will be destroyed
   - resource "aws_route_table" "public" {
-      - arn              = "arn:aws:ec2:us-east-1:381267323226:route-table/rtb-0b0f51c02115dff31" -> null
+      - arn              = "arn:aws:ec2:us-east-1:************:route-table/rtb-0b0f51c02115dff31" -> null
       - id               = "rtb-0b0f51c02115dff31" -> null
-      - owner_id         = "381267323226" -> null
+      - owner_id         = "************" -> null
       - propagating_vgws = [] -> null
       - route            = [
           - {
@@ -498,7 +498,7 @@ Terraform will perform the following actions:
 
   # module.vpc.aws_subnet.this["private-1"] will be destroyed
   - resource "aws_subnet" "this" {
-      - arn                                            = "arn:aws:ec2:us-east-1:381267323226:subnet/subnet-05f8da68859c7a83b" -> null
+      - arn                                            = "arn:aws:ec2:us-east-1:************:subnet/subnet-05f8da68859c7a83b" -> null
       - assign_ipv6_address_on_creation                = false -> null
       - availability_zone                              = "us-east-1a" -> null
       - availability_zone_id                           = "use1-az6" -> null
@@ -511,7 +511,7 @@ Terraform will perform the following actions:
       - ipv6_native                                    = false -> null
       - map_customer_owned_ip_on_launch                = false -> null
       - map_public_ip_on_launch                        = false -> null
-      - owner_id                                       = "381267323226" -> null
+      - owner_id                                       = "************" -> null
       - private_dns_hostname_type_on_launch            = "ip-name" -> null
       - tags                                           = {
           - "Environment" = "dev"
@@ -533,7 +533,7 @@ Terraform will perform the following actions:
 
   # module.vpc.aws_subnet.this["private-2"] will be destroyed
   - resource "aws_subnet" "this" {
-      - arn                                            = "arn:aws:ec2:us-east-1:381267323226:subnet/subnet-09cacca4aa5a54fe6" -> null
+      - arn                                            = "arn:aws:ec2:us-east-1:************:subnet/subnet-09cacca4aa5a54fe6" -> null
       - assign_ipv6_address_on_creation                = false -> null
       - availability_zone                              = "us-east-1b" -> null
       - availability_zone_id                           = "use1-az1" -> null
@@ -546,7 +546,7 @@ Terraform will perform the following actions:
       - ipv6_native                                    = false -> null
       - map_customer_owned_ip_on_launch                = false -> null
       - map_public_ip_on_launch                        = false -> null
-      - owner_id                                       = "381267323226" -> null
+      - owner_id                                       = "************" -> null
       - private_dns_hostname_type_on_launch            = "ip-name" -> null
       - tags                                           = {
           - "Environment" = "dev"
@@ -568,7 +568,7 @@ Terraform will perform the following actions:
 
   # module.vpc.aws_subnet.this["public-1"] will be destroyed
   - resource "aws_subnet" "this" {
-      - arn                                            = "arn:aws:ec2:us-east-1:381267323226:subnet/subnet-07b330272fdd0e805" -> null
+      - arn                                            = "arn:aws:ec2:us-east-1:************:subnet/subnet-07b330272fdd0e805" -> null
       - assign_ipv6_address_on_creation                = false -> null
       - availability_zone                              = "us-east-1a" -> null
       - availability_zone_id                           = "use1-az6" -> null
@@ -581,7 +581,7 @@ Terraform will perform the following actions:
       - ipv6_native                                    = false -> null
       - map_customer_owned_ip_on_launch                = false -> null
       - map_public_ip_on_launch                        = true -> null
-      - owner_id                                       = "381267323226" -> null
+      - owner_id                                       = "************" -> null
       - private_dns_hostname_type_on_launch            = "ip-name" -> null
       - tags                                           = {
           - "Environment" = "dev"
@@ -603,7 +603,7 @@ Terraform will perform the following actions:
 
   # module.vpc.aws_subnet.this["public-2"] will be destroyed
   - resource "aws_subnet" "this" {
-      - arn                                            = "arn:aws:ec2:us-east-1:381267323226:subnet/subnet-0ea555c67b463bf09" -> null
+      - arn                                            = "arn:aws:ec2:us-east-1:************:subnet/subnet-0ea555c67b463bf09" -> null
       - assign_ipv6_address_on_creation                = false -> null
       - availability_zone                              = "us-east-1b" -> null
       - availability_zone_id                           = "use1-az1" -> null
@@ -616,7 +616,7 @@ Terraform will perform the following actions:
       - ipv6_native                                    = false -> null
       - map_customer_owned_ip_on_launch                = false -> null
       - map_public_ip_on_launch                        = true -> null
-      - owner_id                                       = "381267323226" -> null
+      - owner_id                                       = "************" -> null
       - private_dns_hostname_type_on_launch            = "ip-name" -> null
       - tags                                           = {
           - "Environment" = "dev"
@@ -638,7 +638,7 @@ Terraform will perform the following actions:
 
   # module.vpc.aws_vpc.main will be destroyed
   - resource "aws_vpc" "main" {
-      - arn                                  = "arn:aws:ec2:us-east-1:381267323226:vpc/vpc-0eb0fa408363d87b3" -> null
+      - arn                                  = "arn:aws:ec2:us-east-1:************:vpc/vpc-0eb0fa408363d87b3" -> null
       - assign_generated_ipv6_cidr_block     = false -> null
       - cidr_block                           = "10.0.0.0/16" -> null
       - default_network_acl_id               = "acl-0e83fb3b9d946edde" -> null
@@ -652,7 +652,7 @@ Terraform will perform the following actions:
       - instance_tenancy                     = "default" -> null
       - ipv6_netmask_length                  = 0 -> null
       - main_route_table_id                  = "rtb-073cfb5a3904c8151" -> null
-      - owner_id                             = "381267323226" -> null
+      - owner_id                             = "************" -> null
       - tags                                 = {
           - "Environment" = "dev"
           - "ManagedBy"   = "terraform"

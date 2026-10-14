@@ -107,7 +107,7 @@ contrário do que o roteiro original do exercício sugere, `main.tf` **não cria
 diretamente o `LabInstanceProfile` pré-provisionado pela própria AWS Academy
 (`iam_instance_profile = "LabInstanceProfile"`), cuja role (`LabRole`) já aceita
 `ec2.amazonaws.com` como principal. Essa é a orientação oficial atualizada do
-[Lab Parte 2](../../aula-04/laboratorio-parte2.md) desta aula para ambientes Learner Lab, e o
+[Lab Parte 2](https://github.com/AleTavares/devops_20262/blob/main/aula-04/laboratorio-parte2.md) desta aula para ambientes Learner Lab, e o
 resultado é o mesmo pedido pelo exercício: `terraform apply` sem erros e a role confirmada via
 `aws sts get-caller-identity` dentro da instância (evidência em `evidencia-ssh.txt`).
 

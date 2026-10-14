@@ -4,6 +4,6 @@
 v18.20.8
 {
     "UserId": "AROAZER6RDLQ6CZWF5RFK:i-05a01183d64065fb6",
-    "Account": "628270111457",
-    "Arn": "arn:aws:sts::628270111457:assumed-role/LabRole/i-05a01183d64065fb6"
+    "Account": "************",
+    "Arn": "arn:aws:sts::************:assumed-role/LabRole/i-05a01183d64065fb6"
 }
