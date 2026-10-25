@@ -5,93 +5,23 @@ EC2, no AWS Academy Learner Lab (`us-east-1`).
 
 ## 1. Fluxo GitOps: plan no PR, apply no merge
 
-```
-branch → PR ──► terraform-plan.yml ──► comentário com o plan ──► revisão ──► merge na main
-                 (fmt, init, validate, plan;                                     │
-                  falha = PR não deve ser mergeado)                              ▼
-                                                              terraform-apply.yml (apply -auto-approve)
-```
-
-- **O Git é a fonte da verdade.** O que está na `main` é o que existe na AWS; nenhuma pessoa roda
-  `terraform apply` da própria máquina. A EC2 desta aula foi criada assim: PR #4 com o plan
-  `6 to add, 0 to change, 0 to destroy` comentado, merge, e o apply rodou no Actions.
-- **Plan no PR** mostra o efeito real da mudança antes de ela acontecer, no lugar onde a revisão já
-  acontece. Quem revisa vê "o que vai mudar na AWS", não só o diff do `.tf`.
-- **Apply no merge**: o merge é a aprovação humana; depois dele não há passo manual para esquecer ou
-  fazer diferente. O `-auto-approve` é seguro porque o plan já foi revisado no PR.
-- **State remoto** (S3 com versionamento, criptografia e lock nativo `use_lockfile`): plan e apply rodam
-  em runners diferentes e precisam ver o mesmo state. Os dois workflows também compartilham um grupo de
-  `concurrency`, então nunca disputam o lock.
-- **Proteções extras implementadas:** `terraform fmt -check` no plan; o comentário é atualizado (não
-  duplicado) a cada push; e um plan que **destrói** recursos falha até o PR receber o rótulo
-  `aprovado-destroy`. Testado no PR #5: mudar a descrição do security group gerou `4 to destroy`, o check
-  falhou, passou depois do rótulo, e o PR foi fechado sem merge.
+A ideia do GitOps é que o Git vire a fonte da verdade da infraestrutura: o que está na `main` é o que existe na AWS, e ninguém roda `terraform apply` da própria máquina. Foi assim que a EC2 desta aula nasceu. Abri o PR #4 com os arquivos do Terraform, o workflow rodou o plan e comentou no próprio PR que ia criar 6 recursos sem destruir nada, eu fiz o merge e o apply rodou sozinho no Actions. O plan no PR faz sentido porque mostra o efeito real da mudança antes de ela acontecer, e no lugar onde a revisão já acontece: quem revisa vê o que vai mudar na AWS, e não só o diff dos arquivos `.tf`. O apply no merge fecha o ciclo, porque o merge passa a ser a aprovação humana e depois dele não sobra passo manual para alguém esquecer ou fazer diferente. Por isso o `-auto-approve` não me preocupa aqui, já que o plan foi revisado antes. Para isso funcionar, o state precisa ficar remoto (S3 com versionamento, criptografia e lock nativo), porque o plan e o apply rodam em máquinas diferentes, e os dois workflows estão no mesmo grupo de `concurrency` para nunca brigarem pelo lock. Coloquei ainda algumas travas: o `terraform fmt -check`, o comentário que é atualizado em vez de duplicado a cada push, e um bloqueio para plan que destrói recursos, que só passa com o rótulo `aprovado-destroy` no PR. Testei isso no PR #5 mudando a descrição do security group, o que forçava recriar 4 recursos: o check falhou, passou depois que coloquei o rótulo, e fechei o PR sem merge.
 
 ## 2. Autenticação no Learner Lab e por que OIDC seria o ideal
 
-**Como está:** os workflows usam `aws-actions/configure-aws-credentials@v4` com as 3 credenciais
-temporárias da sessão do Lab guardadas como secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
-`AWS_SESSION_TOKEN`). O ID da conta é mascarado (`::add-mask::`) em todos os logs e no comentário do plan.
-
-Na EC2 não há credencial copiada: ela usa o `LabInstanceProfile` (role `LabRole`, que já existe no Lab).
-O `aws ecr get-login-password` do deploy funciona com a role da instância.
-
-**Problemas desse modelo:**
-- As credenciais expiram a cada sessão do Lab. Os 3 secrets precisam ser atualizados toda vez, senão os
-  workflows falham com `ExpiredToken`.
-- São segredos de longa permanência no GitHub (enquanto a sessão vale): se vazarem, dão acesso à conta.
-
-**Em produção: OIDC + role IAM.** O GitHub emite um token OIDC por execução; a AWS confia nesse emissor
-(Identity Provider) e troca o token por credenciais de curta duração de uma role, com condição no
-repositório/branch. Nenhuma chave fica guardada; no workflow só mudaria a linha
-`role-to-assume: arn:aws:iam::<ACCOUNT_ID>:role/github-actions-terraform` (com `permissions: id-token: write`).
-
-**Por que o Lab não permite:** criar o OIDC Identity Provider e a role exige permissões de IAM
-(`iam:CreateOpenIDConnectProvider`, `iam:CreateRole`) que a role `voclabs` do Lab nega. Por isso não há
-`oidc.tf` nesta entrega.
+No Lab os workflows se autenticam com as três credenciais temporárias da sessão (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` e `AWS_SESSION_TOKEN`) guardadas como secrets do repositório e passadas para o `aws-actions/configure-aws-credentials@v4`, com o ID da conta mascarado nos logs e no comentário do plan. A EC2 não recebe credencial nenhuma: ela usa o `LabInstanceProfile`, a role que o próprio Lab já oferece, e é com ela que o `aws ecr get-login-password` funciona no deploy. O problema desse modelo é que as credenciais expiram a cada sessão do Lab, então preciso atualizar os secrets toda vez ou os workflows falham com `ExpiredToken`, e enquanto valem são segredos parados no GitHub que dariam acesso à conta se vazassem. Em produção o caminho certo seria OIDC com uma role IAM: o GitHub gera um token por execução, a AWS confia nesse emissor e troca o token por credenciais curtas da role, com condição no repositório e na branch, sem nenhuma chave guardada. No workflow mudaria pouca coisa, basicamente trocar as três credenciais por `role-to-assume` e dar `id-token: write` nas permissões. Só que para isso é preciso criar o Identity Provider OIDC e a role, e a role `voclabs` do Lab nega essas permissões de IAM, por isso não existe `oidc.tf` nesta entrega.
 
 ## 3. Estratégia Recreate
 
-O deploy (`cd.yml`, job `deploy`, via `appleboy/ssh-action`) faz: **login no ECR → stop → rm → pull → run**,
-seguido de health check com até 20 tentativas; se o `/health` não responder 200, o pipeline falha. A
-imagem é publicada e implantada pela tag `sha-<commit>`, e o container recebe `GITHUB_SHA`: o health check
-também confere se o `/version` no ar mostra o commit do pipeline.
-
-| Prós | Contras |
-|------|---------|
-| Simples: um container, um host, poucos passos | Indisponibilidade entre o `stop` e a nova versão subir |
-| Nunca há duas versões rodando juntas (sem conflito de schema, sessão ou porta) | O pull acontece depois do `stop`: imagem nova = mais tempo fora do ar |
-| Barato: não precisa de load balancer nem capacidade dobrada | Se a nova versão não sobe, a produção fica fora até o rollback |
-
-**Medição:** num deploy com a imagem já em cache na EC2, o `/health` consultado a cada 0,5 s ficou fora
-por ~1–2 s (2 falhas em 112 consultas). Com uma imagem nova, o tempo de download entra nessa janela.
-
-**Quando usar:** ambientes de desenvolvimento/homologação, janelas de manutenção, aplicações internas
-que toleram segundos de indisponibilidade, ou quando duas versões não podem coexistir. Para produção sem
-downtime, Blue-Green (Aula 11) ou Canary (Aula 12).
+O deploy entra na EC2 por SSH com o `appleboy/ssh-action`, faz login no ECR, para e remove o container antigo, baixa a imagem nova e sobe o container, e depois o pipeline testa o `/health` até 20 vezes e falha se não receber 200. A imagem vai para o ar pela tag `sha-` do commit e o container recebe o `GITHUB_SHA`, então o health check também confere se o `/version` mostra o commit daquele pipeline. O lado bom do Recreate é a simplicidade: um host, um container, poucos passos, nunca duas versões rodando juntas e nenhum load balancer para pagar. O lado ruim é que a aplicação fica fora do ar entre o stop e a nova versão subir, e como o pull acontece depois do stop, uma imagem nova aumenta essa janela. Se a versão nova não subir, a produção fica parada até alguém fazer o rollback. Medi isso consultando o `/health` a cada meio segundo durante um deploy com a imagem já em cache na EC2, e a API ficou fora por uns 1 a 2 segundos (2 falhas em 112 consultas). Eu usaria Recreate em desenvolvimento, homologação, aplicação interna ou janela de manutenção, ou quando duas versões não podem conviver. Para produção sem downtime o caminho é Blue-Green ou Canary, que são as próximas aulas.
 
 ## 4. Continuous Delivery × Continuous Deployment
 
-| | Continuous Delivery | Continuous Deployment |
-|--|--|--|
-| Até onde é automático | até a imagem pronta e validada | até produção |
-| Ida para produção | decisão humana (botão/aprovação) | todo commit aprovado na `main` vai sozinho |
-| Pré-requisito | pipeline confiável | testes e health check confiáveis + rollback rápido |
-
-Este projeto faz **Continuous Deployment**: um push na `main` que altera a API chega à EC2 sem
-intervenção (testado com a rota `/version`: commit `b75cdf0` → deploy automático → `/version` mostrando o
-commit). Para virar **Continuous Delivery**, bastaria adicionar *Required reviewers* no environment
-`production` (Settings → Environments): o job `deploy` passa a esperar a aprovação. Esse mecanismo está em
-uso no environment `destroy`, que exige aprovação antes do `terraform-destroy.yml`.
+A diferença está em quem decide a ida para produção. Na Continuous Delivery tudo é automático até a imagem estar pronta e validada, mas o deploy em produção espera alguém apertar o botão. Na Continuous Deployment todo commit que passa no pipeline vai sozinho para produção, o que exige testes, health check e rollback em que dá para confiar. O que montei aqui é Continuous Deployment: quando fiz o commit da rota `/version`, ela chegou na EC2 sem eu fazer nada, e o próprio pipeline conferiu que o commit no ar era o novo. Para virar Continuous Delivery bastaria colocar revisor obrigatório no environment `production`, e o job de deploy passaria a esperar aprovação. Esse mecanismo já está em uso no environment `destroy`, que exige minha aprovação antes do `terraform-destroy.yml` rodar.
 
 ## 5. Rollback
 
-Procedimento completo em [`docs/runbook-rollback.md`](docs/runbook-rollback.md); automatizado em
-[`rollback.sh`](rollback.sh). Resumo: escolher a tag `sha-*` estável no ECR → SSH na EC2 →
-**`aws ecr get-login-password | docker login` antes do pull** → stop → rm → pull → run → health check.
-
-Testado em 24/10: `sha-11f1f32` → `sha-bbeaec3` (o `/version` passou a dar 404, como esperado para a
-versão anterior à rota) → `sha-11f1f32` ([saída](evidencias/rollback-teste.txt)).
+O procedimento está em [`docs/runbook-rollback.md`](docs/runbook-rollback.md) e automatizado no [`rollback.sh`](rollback.sh). Na prática é escolher no ECR a última tag `sha-` estável, entrar na EC2 por SSH, fazer o login no ECR antes do pull (`aws ecr get-login-password | docker login`) e repetir o Recreate com a tag antiga, conferindo o health check no final. Testei em 24/10 voltando a produção de `sha-11f1f32` para `sha-bbeaec3`, que é o primeiro deploy, quando o `/version` passou a dar 404 como esperado por ser uma versão anterior à rota, e depois voltei para `sha-11f1f32`, com o health check OK nas duas trocas ([saída](evidencias/rollback-teste.txt)).
 
 ## 6. Limitações e o que melhoraria
 
