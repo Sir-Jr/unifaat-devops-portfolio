@@ -1,0 +1,139 @@
+name: CI — Aula 09 (ECR)
+
+# lint -> test -> build-and-push
+# A imagem só é PUBLICADA no ECR em push na main ou em git tag vX.Y.Z.
+# Em pull_request o job builda e testa a imagem, mas não faz push.
+# Obs.: filtros de paths não valem para push de tags — toda tag v*.*.* roda.
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+    paths:
+      - 'aula-09/technova-api/**'
+      - 'aula-09/ecr-push.sh'
+      - 'aula-09/ecr-lifecycle-policy.json'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'aula-09/technova-api/**'
+      - 'aula-09/ecr-push.sh'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-aula09-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: technova-api
+  APP_DIR: aula-09/technova-api
+
+jobs:
+  lint:
+    name: Lint (ESLint)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aula-09/technova-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: aula-09/technova-api/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    name: Test (Jest)
+    needs: lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aula-09/technova-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: aula-09/technova-api/package-lock.json
+      - run: npm ci
+      - run: npm run test:ci
+
+  build-and-push:
+    name: Build and push (Amazon ECR)
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    env:
+      # push só fora de PR e com as credenciais do Lab cadastradas
+      DO_PUSH: ${{ github.event_name != 'pull_request' && secrets.AWS_SESSION_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build da imagem (multi-stage)
+        run: docker build -t technova-api:local "$APP_DIR"
+
+      - name: Smoke test (/health)
+        run: |
+          docker run -d --name smoke -p 3000:3000 technova-api:local
+          for _ in $(seq 1 10); do
+            curl -fsS http://localhost:3000/health && exit 0
+            sleep 1
+          done
+          docker logs smoke
+          exit 1
+
+      # ---- daqui para baixo, só fora de PR (DO_PUSH) ----
+      - name: Aviso — secrets do Lab ausentes
+        if: github.event_name != 'pull_request' && env.DO_PUSH != 'true'
+        run: echo "::warning::Secrets AWS_* não cadastrados — push no ECR pulado."
+
+      - name: Configurar credenciais AWS (sessão do Learner Lab)
+        if: env.DO_PUSH == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Mascarar o ID da conta nos logs
+        if: env.DO_PUSH == 'true'
+        run: echo "::add-mask::$(aws sts get-caller-identity --query Account --output text)"
+
+      - name: Login no Amazon ECR
+        if: env.DO_PUSH == 'true'
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Tag e push (sha, latest e semver)
+        if: env.DO_PUSH == 'true'
+        env:
+          ECR_SKIP_LOGIN: '1'
+          ECR_SKIP_BUILD: '1'
+          GIT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: ./aula-09/ecr-push.sh
+
+      - name: Resumo
+        if: always()
+        run: |
+          {
+            echo "### Build and push"
+            echo ""
+            echo "- Evento: \`${{ github.event_name }}\` (${{ github.ref_name }})"
+            echo "- Commit: \`sha-$(git rev-parse --short=7 HEAD)\`"
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              echo "- Push no ECR: **não** (pull request — só build e smoke test)"
+            elif [ "$DO_PUSH" != "true" ]; then
+              echo "- Push no ECR: **pulado** (secrets do Lab não cadastrados)"
+            else
+              echo "- Push no ECR: **sim** (\`${{ env.ECR_REPOSITORY }}\`, \`${{ env.AWS_REGION }}\`)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

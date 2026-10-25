@@ -1,0 +1,157 @@
+name: Security Scan
+
+# Workflow dedicado a segurança, separado do AI review geral.
+# Olha só as linhas ADICIONADAS no PR e o Dockerfile da aula-09.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**.js'
+      - '**.ts'
+      - '**Dockerfile*'
+      - '**docker-compose*'
+      - '**.env*'
+      - '**package*.json'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: security-scan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  security-scan:
+    name: security-scan
+    runs-on: ubuntu-latest
+    env:
+      REPORT: /tmp/security-report.md
+      DOCKERFILE: aula-09/technova-api/Dockerfile
+      APP_DIR: aula-09/technova-api
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar secrets nas linhas adicionadas
+        id: secrets-check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # só linhas adicionadas, sem os arquivos que contêm as próprias regras
+          git diff "origin/$BASE_REF...HEAD" -- . \
+            ':(exclude).github/scripts/ai-review.js' \
+            ':(exclude).github/workflows/security-scan.yml' \
+            ':(exclude)*.md' \
+            | grep '^+' | grep -v '^+++' > /tmp/added.txt || true
+
+          {
+            echo '<!-- security-scan-technova -->'
+            echo '## 🔒 Security Scan Results'
+            echo ''
+            echo '### Secrets hardcoded'
+            echo ''
+          } > "$REPORT"
+          FOUND=0
+
+          check() {  # $1 = regex (grep -E), $2 = mensagem
+            if grep -qiE "$1" /tmp/added.txt; then
+              echo "- 🔴 **CRITICAL:** $2" >> "$REPORT"
+              FOUND=1
+            fi
+          }
+          check '(AKIA|ASIA)[0-9A-Z]{16}'                          'Possível AWS Access Key no código'
+          check "password[a-z_]*[[:space:]]*[:=][[:space:]]*['\"][^'\"\$]{4,}" 'Possível password hardcoded'
+          check 'BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY'      'Chave privada no código'
+          check 'jwt[_-]?secret[[:space:]]*[:=]'                   'JWT secret hardcoded'
+          check 'aws_secret_access_key[[:space:]]*='               'AWS secret access key no código'
+
+          if [ "$FOUND" -eq 0 ]; then
+            echo '✅ Nenhum secret hardcoded detectado nas linhas adicionadas.' >> "$REPORT"
+          fi
+          echo "found=$FOUND" >> "$GITHUB_OUTPUT"
+
+      - name: Verificar segurança do Dockerfile
+        run: |
+          {
+            echo ''
+            echo "### Dockerfile (\`$DOCKERFILE\`)"
+            echo ''
+          } >> "$REPORT"
+          if [ ! -f "$DOCKERFILE" ]; then
+            echo '- 🔵 **INFO:** Dockerfile não encontrado.' >> "$REPORT"
+            exit 0
+          fi
+          if grep -qE '^USER[[:space:]]+(root|0)[[:space:]]*$' "$DOCKERFILE" || ! grep -q '^USER' "$DOCKERFILE"; then
+            echo '- 🟡 **WARNING:** Dockerfile roda como root (sem USER não-root)' >> "$REPORT"
+          else
+            echo '- ✅ Dockerfile define usuário não-root' >> "$REPORT"
+          fi
+          if grep -qE '^FROM.*:latest' "$DOCKERFILE"; then
+            echo '- 🟡 **WARNING:** FROM usa tag :latest (não reproduzível)' >> "$REPORT"
+          else
+            echo '- ✅ Imagens base com tag fixa' >> "$REPORT"
+          fi
+          if grep -q 'HEALTHCHECK' "$DOCKERFILE"; then
+            echo '- ✅ HEALTHCHECK configurado' >> "$REPORT"
+          else
+            echo '- 🔵 **INFO:** Considere adicionar HEALTHCHECK' >> "$REPORT"
+          fi
+          if [ "$(grep -c '^FROM' "$DOCKERFILE")" -ge 2 ]; then
+            echo '- ✅ Build multi-stage' >> "$REPORT"
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Auditar dependências de produção (npm audit)
+        run: |
+          {
+            echo ''
+            echo '### Dependências (npm audit, só produção)'
+            echo ''
+          } >> "$REPORT"
+          cd "$APP_DIR"
+          if npm audit --omit=dev --audit-level=high > /tmp/audit.txt 2>&1; then
+            echo '- ✅ Nenhuma vulnerabilidade high/critical nas dependências de produção' >> "$REPORT"
+          else
+            echo '- 🟡 **WARNING:** `npm audit` encontrou vulnerabilidades high/critical:' >> "$REPORT"
+            echo '' >> "$REPORT"
+            echo '```' >> "$REPORT"
+            tail -n 15 /tmp/audit.txt >> "$REPORT"
+            echo '```' >> "$REPORT"
+          fi
+
+      - name: Postar ou atualizar resultado
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = process.env.REPORT;
+            if (!fs.existsSync(path)) return;
+            const body = fs.readFileSync(path, 'utf8');
+            const marker = '<!-- security-scan-technova -->';
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100
+            });
+            const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, body
+              });
+            }
