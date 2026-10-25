@@ -24,8 +24,10 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Criar usuário não-root
-RUN addgroup -g 1001 -S nodejs && \
+# Atualizar os pacotes do Alpine (correções de segurança do openssl/zlib
+# apontadas pelo scan do ECR) e criar o usuário não-root
+RUN apk upgrade --no-cache && \
+    addgroup -g 1001 -S nodejs && \
     adduser -S technova -u 1001 -G nodejs
 
 # Copiar as dependências do builder e o código da aplicação
