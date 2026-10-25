@@ -1,0 +1,40 @@
+# Teste do rollback (./aula-10/rollback.sh) — 24/10/2026, ~23:51 BRT
+# Produção: sha-11f1f32 (v1.1.0) -> rollback para sha-bbeaec3 (1º deploy, sem /version) -> volta para sha-11f1f32
+# ID da conta mascarado pelo script; IP público da EC2 substituído por <IP-EC2>
+
+$ ./aula-10/rollback.sh sha-bbeaec3
+==> Conferindo se a tag existe no ECR...
+2026-10-24T23:44:11.159000-03:00
+==> EC2 de produção: <IP-EC2>
+==> Versão no ar antes do rollback:
+{"version":"1.1.0","commit":"local","image":"sha-11f1f32","deployedAt":"2026-10-25T02:50:47Z"}
+--> Login no ECR (antes do pull)
+Login Succeeded
+--> Recreate: stop + rm
+--> Pull :sha-bbeaec3
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:sha-bbeaec3
+--> Run :sha-bbeaec3 (commit bbeaec3396262786ca5e58eac0023910811bb953)
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:sha-bbeaec3  Up Less than a second (health: starting)
+==> Health check:
+{"status":"ok","timestamp":"2026-10-25T02:51:23.825Z","version":"1.0.0"}
+==> Versão no ar depois do rollback:
+HTTP 404 (versão anterior à rota /version)
+==> OK: produção em technova-api:sha-bbeaec3
+$ ./aula-10/rollback.sh sha-11f1f32
+==> Conferindo se a tag existe no ECR...
+2026-10-24T23:48:46.319000-03:00
+==> EC2 de produção: <IP-EC2>
+==> Versão no ar antes do rollback:
+HTTP 404 (versão anterior à rota /version)
+--> Login no ECR (antes do pull)
+Login Succeeded
+--> Recreate: stop + rm
+--> Pull :sha-11f1f32
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:sha-11f1f32
+--> Run :sha-11f1f32 (commit 11f1f32e7bdf8eaed1b67540443a1c06d75905c8)
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:sha-11f1f32  Up Less than a second (health: starting)
+==> Health check:
+{"status":"ok","timestamp":"2026-10-25T02:51:42.880Z","version":"1.1.0"}
+==> Versão no ar depois do rollback:
+{"version":"1.1.0","commit":"11f1f32e7bdf8eaed1b67540443a1c06d75905c8","image":"sha-11f1f32","deployedAt":"2026-10-25T02:51:42Z"}
+==> OK: produção em technova-api:sha-11f1f32
