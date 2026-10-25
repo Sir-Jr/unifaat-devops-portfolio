@@ -56,7 +56,7 @@ build.
 | Bônus: deploy com `GITHUB_SHA` | container recebe `GITHUB_SHA`; `/version` mostra o commit e o health check confere |
 | Bônus: notificação de deploy | comentário automático no commit ("🚀 Deploy em produção concluído") |
 | Bônus: `terraform fmt -check` | primeiro step do plan |
-| Bônus: destroy separado com aprovação manual | `terraform-destroy.yml` + environment `destroy` com *required reviewer* |
+| Bônus: destroy separado com aprovação manual | `terraform-destroy.yml` + environment `destroy` com *required reviewer* (executado em 25/10 após aprovação: [run 40158253920](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40158253920)) |
 | Bônus: GitHub Environment com protection rule | `production`: deploy só a partir da `main`; `destroy`: aprovação obrigatória |
 
 ## Como reproduzir
@@ -78,6 +78,9 @@ Pré-requisitos: sessão do Learner Lab ativa, AWS CLI, Terraform ≥ 1.10, `gh`
    workflow) → conferir o health check no log e `http://<IP-da-EC2>:3000/version`.
 6. **Rollback:** `./aula-10/rollback.sh sha-<commit>` (ver o runbook).
 
+Ao fim da entrega (25/10) a infraestrutura foi destruída pelo `terraform-destroy.yml`; o ECR e o bucket do
+state foram mantidos. Para recriar a EC2, basta um novo PR em `aula-10/terraform/` (plan) e o merge (apply).
+
 O IP da EC2 muda quando o Lab reinicia a instância; o `cd.yml` e o `rollback.sh` a encontram pela tag
 `Role=technova-api-deploy`.
 
@@ -92,4 +95,5 @@ O IP da EC2 muda quando o Lab reinicia a instância; o `cd.yml` e o `rollback.sh
 | Deploy automático de uma mudança de código (`/version`) | [run 40155711755](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40155711755) |
 | Guard de destroy (falha sem rótulo, passa com `aprovado-destroy`) | [PR #5](https://github.com/Sir-Jr/unifaat-devops-portfolio/pull/5) |
 | Rollback testado | [evidencias/rollback-teste.txt](evidencias/rollback-teste.txt) |
+| Destroy com aprovação manual (6 recursos destruídos) | [run 40158253920](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40158253920) |
 | Downtime do Recreate medido | [evidencias/downtime-recreate.txt](evidencias/downtime-recreate.txt) |
