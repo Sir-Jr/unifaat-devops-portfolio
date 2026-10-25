@@ -102,3 +102,21 @@ node .github/scripts/ai-review.js     # relatório em /tmp/ai-review-result.md
 Cadastrar em **Settings → Secrets and variables → Actions** os valores da sessão atual do Lab:
 `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` e `AWS_SESSION_TOKEN`. Eles expiram com a sessão; sem os
 secrets, o job builda e testa a imagem e pula o push com um aviso.
+
+## Evidências
+
+| Evidência | Arquivo |
+|-----------|---------|
+| Repositório `technova-api` no console do ECR com as tags | [screenshots/ecr-console.png](screenshots/ecr-console.png) |
+| `ecr-push.sh` publicando a release 1.0.0 | [screenshots/ecr-push-ok.png](screenshots/ecr-push-ok.png) · [evidencias/ecr-push-v1.0.0.txt](evidencias/ecr-push-v1.0.0.txt) |
+| Comentário do AI review no PR de teste | [screenshots/ai-review-comment.png](screenshots/ai-review-comment.png) |
+| Quality gate bloqueando o PR (check `ai-review` obrigatório) | [screenshots/quality-gate-block.png](screenshots/quality-gate-block.png) |
+| Pull e rollback por tag (`1.0.0` → `sha-2b3c81b` → `1.0.0`) | [evidencias/ecr-rollback.txt](evidencias/ecr-rollback.txt) |
+| Scan do ECR (26 achados → 0) | [evidencias/ecr-scan.txt](evidencias/ecr-scan.txt) |
+| CI verde publicando no ECR pela git tag `v1.0.0` | [run 40152172054](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40152172054) |
+| PR de teste do AI review (bloqueado → corrigido → ✅) | [PR #2](https://github.com/Sir-Jr/unifaat-devops-portfolio/pull/2) |
+| PR liberado pelo gate (sem CRITICAL) | [PR #3](https://github.com/Sir-Jr/unifaat-devops-portfolio/pull/3) |
+
+No console, a imagem sem tag (`-`, 22:51) é a do CI da tag `v1.0.0`. Logo depois, o `ecr-push.sh`
+local publicou a mesma release e reapontou as tags (mutáveis) para a imagem local; a do CI ficou sem
+tag e expira pela regra 1 da lifecycle policy.
