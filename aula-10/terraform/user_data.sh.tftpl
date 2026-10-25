@@ -1,0 +1,24 @@
+#!/bin/bash
+# Prepara a EC2 para receber deploys: Docker + AWS CLI (login no ECR)
+set -euxo pipefail
+exec > /var/log/technova-setup.log 2>&1
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get install -y docker.io curl unzip
+systemctl enable --now docker
+usermod -aG docker ubuntu
+
+# AWS CLI v2 (usada no deploy: aws ecr get-login-password)
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+rm -rf /tmp/aws /tmp/awscliv2.zip
+
+# Região padrão para o usuário do deploy
+mkdir -p /home/ubuntu/.aws
+printf '[default]\nregion = ${aws_region}\n' > /home/ubuntu/.aws/config
+chown -R ubuntu:ubuntu /home/ubuntu/.aws
+
+touch /var/lib/technova-ready
+echo "== EC2 pronta para deploy =="
