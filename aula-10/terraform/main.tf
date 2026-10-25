@@ -29,7 +29,7 @@ data "aws_ssm_parameter" "ubuntu_ami" {
 # ---------- Security Group ----------
 resource "aws_security_group" "technova_api" {
   name        = "${var.project_name}-api-sg"
-  description = "TechNova API - SSH do pipeline de CD e porta da aplicacao"
+  description = "TechNova API - teste do guard de destroy (nao mergear)"
   vpc_id      = data.aws_vpc.default.id
 
   tags = {
