@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const pkg = require('./package.json');
 
 const app = express();
 
@@ -11,7 +12,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || '1.0.0'
+    version: pkg.version
   });
 });
 
@@ -52,7 +53,7 @@ app.post('/api/orders', (req, res) => {
 // Versão em produção: qual commit e qual imagem estão no ar (rastreabilidade)
 app.get('/version', (req, res) => {
   res.json({
-    version: '1.1.0',
+    version: pkg.version,
     commit: process.env.GITHUB_SHA || 'local',
     image: process.env.IMAGE_TAG || 'local',
     deployedAt: process.env.DEPLOY_TIME || null
