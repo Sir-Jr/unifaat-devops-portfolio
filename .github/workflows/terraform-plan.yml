@@ -5,7 +5,7 @@ name: Terraform Plan
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
       - 'aula-10/terraform/**.tf'
       - 'aula-10/terraform/**.tfvars'

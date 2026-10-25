@@ -3,7 +3,7 @@
 [![CD Pipeline](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/workflows/cd.yml/badge.svg)](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/workflows/cd.yml)
 [![Terraform Apply](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/workflows/terraform-apply.yml/badge.svg)](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/workflows/terraform-apply.yml)
 
-Nenhum humano roda Terraform nem faz deploy à mão:
+Nenhum humano roda Terraform nem faz deploy à mão (a exceção é o rollback de emergência, documentado no runbook):
 
 - **Infra (GitOps):** PR com `.tf` → `terraform-plan.yml` comenta o plan → merge → `terraform-apply.yml`.
 - **Aplicação (CD):** push na `main` → lint → test → build+push no Amazon ECR → deploy Recreate via SSH
@@ -63,7 +63,9 @@ build.
 
 Pré-requisitos: sessão do Learner Lab ativa, AWS CLI, Terraform ≥ 1.10, `gh` autenticado.
 
-1. **State remoto (uma vez):** `./aula-10/terraform/bootstrap-backend.sh`
+1. **State remoto (uma vez):** `./aula-10/terraform/bootstrap-backend.sh`. O nome do bucket
+   (`technova-tfstate-aula10-a6c8f018`) é fixo e precisa ser único na AWS: para reproduzir em outra conta,
+   troque-o em `bootstrap-backend.sh` e no `backend "s3"` do `provider.tf`.
 2. **Secrets do repositório** (Settings → Secrets and variables → Actions):
    - `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN` — da sessão atual do Lab
      (atualizar a cada nova sessão);
@@ -85,8 +87,9 @@ O IP da EC2 muda quando o Lab reinicia a instância; o `cd.yml` e o `rollback.sh
 |-----------|------|
 | Plan comentado no PR (infra criada via GitOps) | [PR #4](https://github.com/Sir-Jr/unifaat-devops-portfolio/pull/4) · [screenshots/plan-pr-comment.png](screenshots/plan-pr-comment.png) |
 | Apply após o merge (6 recursos criados) | [run 40155338659](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40155338659) · [screenshots/apply-success.png](screenshots/apply-success.png) |
-| Pipeline CD verde (lint → test → build-push → deploy) | [run 40156320739](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40156320739) · [screenshots/cd-pipeline-green.png](screenshots/cd-pipeline-green.png) |
+| Pipeline CD verde (lint → test → build-push → deploy) | [run 40155820969](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40155820969) (push) · [run 40156320739](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40156320739) (manual, mesmo commit) · [screenshots/cd-pipeline-green.png](screenshots/cd-pipeline-green.png) |
 | Health check no log do workflow | [screenshots/health-check-pass.png](screenshots/health-check-pass.png) |
 | Deploy automático de uma mudança de código (`/version`) | [run 40155711755](https://github.com/Sir-Jr/unifaat-devops-portfolio/actions/runs/40155711755) |
 | Guard de destroy (falha sem rótulo, passa com `aprovado-destroy`) | [PR #5](https://github.com/Sir-Jr/unifaat-devops-portfolio/pull/5) |
 | Rollback testado | [evidencias/rollback-teste.txt](evidencias/rollback-teste.txt) |
+| Downtime do Recreate medido | [evidencias/downtime-recreate.txt](evidencias/downtime-recreate.txt) |

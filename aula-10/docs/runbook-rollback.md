@@ -58,8 +58,11 @@ aws ecr get-login-password --region us-east-1 \
   | sudo docker login --username AWS --password-stdin "$REGISTRY"      # login ANTES do pull
 sudo docker stop technova-api && sudo docker rm technova-api
 sudo docker pull "$REGISTRY/technova-api:sha-COMMIT_BOM"
+# commit gravado na imagem pelo CI, para o /version continuar rastreável
+SHA=$(sudo docker inspect -f '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$REGISTRY/technova-api:sha-COMMIT_BOM")
 sudo docker run -d --name technova-api -p 3000:3000 --restart unless-stopped \
   -e NODE_ENV=production -e IMAGE_TAG=sha-COMMIT_BOM \
+  -e GITHUB_SHA="$SHA" -e DEPLOY_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   "$REGISTRY/technova-api:sha-COMMIT_BOM"
 curl -s http://localhost:3000/health
 ```

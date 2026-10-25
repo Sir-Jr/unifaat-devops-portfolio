@@ -41,8 +41,14 @@ ssh -i "$SSH_KEY" -o BatchMode=yes -o StrictHostKeyChecking=accept-new "ubuntu@$
   "REGISTRY='$REGISTRY' TAG='$TAG' CONTAINER='$CONTAINER' REGION='$REGION' bash -s" <<'REMOTE' 2>&1 | mask
 set -euo pipefail
 echo "--> Login no ECR (antes do pull)"
-aws ecr get-login-password --region "$REGION" \
-  | sudo docker login --username AWS --password-stdin "$REGISTRY" 2>&1 | grep -v -i -E "warning|credential|docs.docker" || true
+# sem login não há pull: aborta ANTES de derrubar o container atual
+if ! aws ecr get-login-password --region "$REGION" \
+     | sudo docker login --username AWS --password-stdin "$REGISTRY" >/tmp/ecr-login.log 2>&1; then
+  cat /tmp/ecr-login.log >&2
+  echo "ERRO: login no ECR falhou — produção mantida na versão atual" >&2
+  exit 1
+fi
+echo "Login Succeeded"
 echo "--> Recreate: stop + rm"
 sudo docker stop "$CONTAINER" >/dev/null || true
 sudo docker rm "$CONTAINER" >/dev/null || true
