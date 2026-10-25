@@ -1,0 +1,263 @@
+name: CD Pipeline - Build and Deploy
+
+# Continuous Deployment: cada push na main que altera a API passa por
+# lint -> test -> build-push (ECR) -> deploy (Recreate via SSH) -> health check.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'aula-10/technova-api/**'
+      - '.github/workflows/cd.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Deploys em fila: nunca dois Recreate ao mesmo tempo na mesma EC2
+concurrency:
+  group: cd-aula10-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: technova-api
+  APP_DIR: aula-10/technova-api
+  CONTAINER_NAME: technova-api
+  # tag "Role" da EC2 criada pelo Terraform (aula-10/terraform/main.tf)
+  INSTANCE_ROLE_TAG: technova-api-deploy
+
+jobs:
+  # ============================
+  # Job 1: Lint
+  # ============================
+  lint:
+    name: Lint (ESLint)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aula-10/technova-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: aula-10/technova-api/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+
+  # ============================
+  # Job 2: Test
+  # ============================
+  test:
+    name: Test (Jest)
+    needs: lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aula-10/technova-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: aula-10/technova-api/package-lock.json
+      - run: npm ci
+      - run: npm run test:ci
+
+  # ============================
+  # Job 3: Build e Push (Amazon ECR)
+  # ============================
+  build-push:
+    name: Build and push (Amazon ECR)
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tags.outputs.sha_tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar credenciais AWS (sessão do Learner Lab)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Mascarar o ID da conta nos logs
+        run: echo "::add-mask::$(aws sts get-caller-identity --query Account --output text)"
+
+      - name: Login no Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Definir tags
+        id: tags
+        run: echo "sha_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build (multi-stage)
+        run: |
+          docker build --provenance=false --sbom=false \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            -t technova-api:ci "$APP_DIR"
+
+      - name: Smoke test da imagem
+        run: |
+          docker run -d --name smoke -p 3000:3000 technova-api:ci
+          for _ in $(seq 1 10); do
+            curl -fsS http://localhost:3000/health && exit 0
+            sleep 1
+          done
+          docker logs smoke
+          exit 1
+
+      - name: Push (sha + latest)
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          SHA_TAG: ${{ steps.tags.outputs.sha_tag }}
+        run: |
+          for tag in "$SHA_TAG" latest; do
+            docker tag technova-api:ci "$IMAGE:$tag"
+            docker push --quiet "$IMAGE:$tag"
+          done
+
+  # ============================
+  # Job 4: Deploy na EC2 (Recreate)
+  # ============================
+  deploy:
+    name: Deploy (Recreate via SSH)
+    needs: build-push
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.host.outputs.url }}
+    permissions:
+      contents: write   # comentário de deploy no commit (notificação)
+    steps:
+      - name: Configurar credenciais AWS (sessão do Learner Lab)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Montar o endereço do registry (ID da conta mascarado)
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "::add-mask::$ACCOUNT_ID"
+          echo "REGISTRY=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com" >> "$GITHUB_ENV"
+
+      # O IP público muda quando o Lab reinicia a EC2: busca pela tag
+      - name: Descobrir a EC2 de produção
+        id: host
+        run: |
+          IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Role,Values=$INSTANCE_ROLE_TAG" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[].Instances[].PublicIpAddress | [0]' --output text)
+          if [ -z "$IP" ] || [ "$IP" = "None" ]; then
+            echo "::error::Nenhuma EC2 running com a tag Role=$INSTANCE_ROLE_TAG (rode o terraform-apply ou religue o Lab)."
+            exit 1
+          fi
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "url=http://$IP:3000/health" >> "$GITHUB_OUTPUT"
+          echo "EC2 de produção: $IP"
+
+      - name: Deploy via SSH (Recreate)
+        uses: appleboy/ssh-action@v1
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
+          CONTAINER_NAME: ${{ env.CONTAINER_NAME }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          GIT_SHA: ${{ github.sha }}
+        with:
+          host: ${{ steps.host.outputs.ip }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: REGISTRY,IMAGE_TAG,CONTAINER_NAME,AWS_REGION,GIT_SHA
+          script: |
+            set -euo pipefail
+            IMAGE="$REGISTRY/technova-api:$IMAGE_TAG"
+
+            echo "⏳ Aguardando o user_data da EC2 (Docker + AWS CLI)..."
+            for _ in $(seq 1 60); do [ -f /var/lib/technova-ready ] && break; sleep 5; done
+            test -f /var/lib/technova-ready
+
+            # A EC2 usa o LabInstanceProfile: sem credenciais trafegando no SSH
+            echo "🔐 Login no Amazon ECR (antes do pull)..."
+            aws ecr get-login-password --region "$AWS_REGION" \
+              | sudo docker login --username AWS --password-stdin "$REGISTRY"
+
+            echo "🛑 Recreate: parando e removendo o container atual..."
+            sudo docker stop "$CONTAINER_NAME" || true
+            sudo docker rm "$CONTAINER_NAME" || true
+
+            echo "📦 Pull da imagem $IMAGE_TAG..."
+            sudo docker pull "$IMAGE"
+
+            echo "▶️ Subindo a nova versão..."
+            sudo docker run -d \
+              --name "$CONTAINER_NAME" \
+              -p 3000:3000 \
+              --restart unless-stopped \
+              -e NODE_ENV=production \
+              -e GITHUB_SHA="$GIT_SHA" \
+              -e DEPLOY_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              -e IMAGE_TAG="$IMAGE_TAG" \
+              "$IMAGE"
+
+            sudo docker image prune -f >/dev/null
+            sudo docker ps --filter "name=$CONTAINER_NAME"
+
+      - name: Health check
+        env:
+          HOST: ${{ steps.host.outputs.ip }}
+        run: |
+          echo "⏳ Aguardando a aplicação iniciar..."
+          sleep 5
+          for i in $(seq 1 20); do
+            HTTP_CODE=$(curl -s -o /tmp/health.json -w "%{http_code}" "http://$HOST:3000/health" || echo "000")
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Health check passed! (HTTP $HTTP_CODE) — $(cat /tmp/health.json)"
+              # rastreabilidade: a versão no ar é o commit deste pipeline?
+              if curl -fsS "http://$HOST:3000/version" -o /tmp/version.json 2>/dev/null; then
+                echo "ℹ️ /version: $(cat /tmp/version.json)"
+                grep -q "$GITHUB_SHA" /tmp/version.json \
+                  || { echo "❌ /version não mostra o commit $GITHUB_SHA"; exit 1; }
+              fi
+              exit 0
+            fi
+            echo "⏳ Tentativa $i/20 - HTTP $HTTP_CODE - aguardando 5s..."
+            sleep 5
+          done
+          echo "❌ Health check falhou após 20 tentativas!"
+          exit 1
+
+      # Bônus: notificação de deploy como comentário no commit
+      - name: Notificar deploy (comentário no commit)
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          STATUS: ${{ job.status }}
+          IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
+          URL: ${{ steps.host.outputs.url }}
+        with:
+          script: |
+            const ok = process.env.STATUS === 'success';
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: [
+                ok ? '🚀 **Deploy em produção concluído**' : '❌ **Deploy em produção falhou**',
+                '',
+                `- Imagem: \`technova-api:${process.env.IMAGE_TAG}\``,
+                `- Estratégia: Recreate (stop → rm → pull → run)`,
+                `- Health check: ${ok ? 'OK' : 'falhou'}${process.env.URL ? ` (${process.env.URL})` : ''}`,
+                `- Execução: ${run}`
+              ].join('\n')
+            });
