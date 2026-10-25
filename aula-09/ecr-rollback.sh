@@ -37,7 +37,7 @@ docker run -d --name "$NAME" -p "$PORT:3000" "$IMAGE" >/dev/null
 
 echo "==> Health check..."
 for _ in $(seq 1 10); do
-  if curl -fsS "http://localhost:$PORT/health"; then
+  if curl -fsS "http://localhost:$PORT/health" 2>/dev/null; then
     echo
     echo "==> OK: rodando $REPO:$TAG ($(docker inspect -f '{{.Image}}' "$NAME" | cut -c1-19))"
     exit 0

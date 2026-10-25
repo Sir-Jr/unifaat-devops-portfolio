@@ -1,0 +1,46 @@
+# Pull e rollback por tag a partir do ECR (./aula-09/ecr-rollback.sh) — 24/10/2026
+# 1.0.0 -> sha-2b3c81b (build anterior) -> 1.0.0; ID da conta mascarado
+# (o 'curl: (56)' era a 1ª tentativa do health check antes do container subir; silenciado depois)
+
+########## ./aula-09/ecr-rollback.sh 1.0.0
+==> Login no ECR...
+Login Succeeded
+==> Removendo cópia local (força o pull do registry)...
+==> Pull :1.0.0
+1.0.0: Pulling from technova-api
+Digest: sha256:ce98b2ce1b63a9d3a2a230677074d3d9f10f6396c205b5a24de994f3905fe644
+Status: Downloaded newer image for ************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1.0.0
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1.0.0
+==> (Re)deploy do container technova-prod na porta 3000...
+==> Health check...
+curl: (56) Recv failure: Connection reset by peer
+{"status":"ok","timestamp":"2026-10-25T01:41:23.416Z","version":"1.0.0"}
+==> OK: rodando technova-api:1.0.0 (sha256:ce98b2ce1b63)
+########## ./aula-09/ecr-rollback.sh sha-2b3c81b
+==> Login no ECR...
+Login Succeeded
+==> Removendo cópia local (força o pull do registry)...
+==> Pull :sha-2b3c81b
+sha-2b3c81b: Pulling from technova-api
+Digest: sha256:82e3e26ea2b6061b8606b284f405b1276634fd5050e6f67064b2269f2abd72be
+Status: Downloaded newer image for ************.dkr.ecr.us-east-1.amazonaws.com/technova-api:sha-2b3c81b
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:sha-2b3c81b
+==> (Re)deploy do container technova-prod na porta 3000...
+==> Health check...
+curl: (56) Recv failure: Connection reset by peer
+{"status":"ok","timestamp":"2026-10-25T01:41:29.384Z","version":"1.0.0"}
+==> OK: rodando technova-api:sha-2b3c81b (sha256:82e3e26ea2b6)
+########## ./aula-09/ecr-rollback.sh 1.0.0
+==> Login no ECR...
+Login Succeeded
+==> Removendo cópia local (força o pull do registry)...
+==> Pull :1.0.0
+1.0.0: Pulling from technova-api
+Digest: sha256:ce98b2ce1b63a9d3a2a230677074d3d9f10f6396c205b5a24de994f3905fe644
+Status: Downloaded newer image for ************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1.0.0
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1.0.0
+==> (Re)deploy do container technova-prod na porta 3000...
+==> Health check...
+curl: (56) Recv failure: Connection reset by peer
+{"status":"ok","timestamp":"2026-10-25T01:41:35.955Z","version":"1.0.0"}
+==> OK: rodando technova-api:1.0.0 (sha256:ce98b2ce1b63)

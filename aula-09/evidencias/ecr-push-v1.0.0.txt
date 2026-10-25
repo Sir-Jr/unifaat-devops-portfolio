@@ -1,0 +1,37 @@
+# ./aula-09/ecr-push.sh no commit b33d159 com a git tag v1.0.0 — 24/10/2026
+# ID da conta AWS mascarado pelo próprio script (************)
+
+==> Release detectada: v1.0.0
+==> Região: us-east-1 | Repositório: technova-api
+==> Tags: sha-b33d159 latest 1.0.0 1.0 1
+==> Garantindo o repositório ECR (technova-api)...
+    já existe
+    scan on push habilitado
+    lifecycle policy aplicada
+==> Login no ECR...
+Login Succeeded
+==> Build...
+==> Tag e push...
+--- push :sha-b33d159
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:sha-b33d159
+--- push :latest
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:latest
+--- push :1.0.0
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1.0.0
+--- push :1.0
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1.0
+--- push :1
+************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1
+==> Tags no ECR:
+----------------------------------------------------------------------------
+|                              DescribeImages                              |
++-------------------------------------+------------------------------------+
+|  latest, 1.0.0, sha-b33d159, 1, 1.0 |  2026-10-24T22:40:15.805000-03:00  |
+|  sha-2b3c81b                        |  2026-10-24T22:38:14.789000-03:00  |
++-------------------------------------+------------------------------------+
+==> Pronto! Imagem publicada:
+    ************.dkr.ecr.us-east-1.amazonaws.com/technova-api:sha-b33d159
+    ************.dkr.ecr.us-east-1.amazonaws.com/technova-api:latest
+    ************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1.0.0
+    ************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1.0
+    ************.dkr.ecr.us-east-1.amazonaws.com/technova-api:1

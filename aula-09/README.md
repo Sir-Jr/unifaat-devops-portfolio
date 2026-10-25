@@ -23,7 +23,8 @@ aula-09/
 ├── ecr-rollback.sh                # pull de uma tag do ECR + deploy local + /health
 ├── ecr-lifecycle-policy.json      # lifecycle policy do repositório (bônus)
 ├── ia-cicd-analise.md             # análise da estratégia
-├── screenshots/                   # evidências
+├── evidencias/                    # saídas reais (ID da conta mascarado): push v1.0.0, rollback, scan
+├── screenshots/                   # prints do console ECR, AI review, push e quality gate
 └── technova-api/
     ├── Dockerfile                 # multi-stage, labels OCI, usuário não-root, HEALTHCHECK
     ├── .dockerignore
@@ -48,7 +49,7 @@ O TF mostra `.github/` dentro de `aula-09/`, mas o GitHub Actions só executa wo
 | Quality gate | step *Quality gate*: CRITICAL → `exit 1`; check `ai-review` obrigatório na `main` |
 | Documentação | `ia-cicd-analise.md` |
 | Bônus: lifecycle policy | `ecr-lifecycle-policy.json`, aplicada pelo `ecr-push.sh` |
-| Bônus: scan on push | `ecr-push.sh` — `scanOnPush=true` |
+| Bônus: scan on push | `ecr-push.sh` — `scanOnPush=true`; resultado em `evidencias/ecr-scan.txt` (26 achados no openssl/zlib do Alpine → 0 após `apk upgrade`) |
 | Bônus: comentário atualizado | marcador `<!-- ai-review-technova -->` + `updateComment` |
 | Bônus: security scan separado | `.github/workflows/security-scan.yml` |
 | Bônus: badges | topo deste README |
