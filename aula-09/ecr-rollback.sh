@@ -25,14 +25,16 @@ echo "==> Login no ECR..."
 aws ecr get-login-password --region "$REGION" \
   | docker login --username AWS --password-stdin "$REGISTRY" 2>&1 | mask
 
+echo "==> Parando o container atual ($NAME)..."
+docker rm -f "$NAME" >/dev/null 2>&1 || true
+
 echo "==> Removendo cópia local (força o pull do registry)..."
 docker rmi "$IMAGE" >/dev/null 2>&1 || true
 
 echo "==> Pull :$TAG"
 docker pull "$IMAGE" 2>&1 | mask
 
-echo "==> (Re)deploy do container $NAME na porta $PORT..."
-docker rm -f "$NAME" >/dev/null 2>&1 || true
+echo "==> Deploy do container $NAME na porta $PORT..."
 docker run -d --name "$NAME" -p "$PORT:3000" "$IMAGE" >/dev/null
 
 echo "==> Health check..."

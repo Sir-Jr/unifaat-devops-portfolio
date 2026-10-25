@@ -18,6 +18,7 @@
 #   GIT_TAG         força a versão (ex.: v1.2.3) em vez de ler do git
 #   ECR_SKIP_LOGIN=1  não faz docker login (o CI já logou com amazon-ecr-login)
 #   ECR_SKIP_BUILD=1  usa a imagem local technova-api:local já buildada
+#   ALLOW_DIRTY=1     publica mesmo com alterações não commitadas em technova-api/
 # ============================================================
 set -euo pipefail
 
@@ -36,6 +37,13 @@ ECR_URI="$REGISTRY/$REPO"
 mask() { sed -u "s/$ACCOUNT_ID/************/g"; }
 
 # ---- Tags ----
+# A tag sha- precisa corresponder ao código buildado: com alterações não
+# commitadas na aplicação, o script para (ALLOW_DIRTY=1 ignora a checagem).
+if [ "${ALLOW_DIRTY:-0}" != "1" ] && [ -n "$(git -C "$SCRIPT_DIR" status --porcelain -- technova-api)" ]; then
+  echo "ERRO: há alterações não commitadas em technova-api/ — a tag sha- não corresponderia ao código." >&2
+  echo "      Faça commit (ou use ALLOW_DIRTY=1 por sua conta e risco)." >&2
+  exit 1
+fi
 SHA_TAG="sha-$(git -C "$SCRIPT_DIR" rev-parse --short=7 HEAD)"
 TAGS=("$SHA_TAG" "latest")
 

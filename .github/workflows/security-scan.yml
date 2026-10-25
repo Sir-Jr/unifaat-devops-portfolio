@@ -51,6 +51,8 @@ jobs:
             echo '<!-- security-scan-technova -->'
             echo '## 🔒 Security Scan Results'
             echo ''
+            echo '> Scan informativo: não reprova o PR. O bloqueio por achado CRITICAL é feito pelo check `ai-review`.'
+            echo ''
             echo '### Secrets hardcoded'
             echo ''
           } > "$REPORT"
@@ -58,7 +60,7 @@ jobs:
 
           check() {  # $1 = regex (grep -E), $2 = mensagem
             if grep -qiE "$1" /tmp/added.txt; then
-              echo "- 🔴 **CRITICAL:** $2" >> "$REPORT"
+              echo "- 🟠 **ALERTA:** $2" >> "$REPORT"
               FOUND=1
             fi
           }

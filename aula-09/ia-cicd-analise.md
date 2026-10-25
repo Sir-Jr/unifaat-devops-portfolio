@@ -81,7 +81,7 @@ Script: `.github/scripts/ai-review.js` — 18 padrões, aplicados só às **linh
 | 🔵 INFO | `var` | JS/TS |
 | 🔵 INFO | URL `http://` (exceto localhost) | todos |
 
-O workflow dedicado `security-scan.yml` repete a busca de secrets (AWS key, password, chave privada,
+O workflow dedicado `security-scan.yml` é informativo (não reprova o PR) e repete a busca de secrets (AWS key, password, chave privada,
 JWT secret, `aws_secret_access_key`), confere o Dockerfile (usuário não-root, tag fixa, HEALTHCHECK,
 multi-stage) e roda `npm audit --omit=dev` nas dependências de produção.
 
@@ -169,6 +169,8 @@ alguém precisa olhar antes de aceitar ou contestar.
   padrão, mas sem problema real no contexto.
 - **Falsos negativos:** regex só vê o que tem o formato esperado. Um secret numa variável com nome
   neutro (`const x = 'sk-…'`), SQL montado em várias linhas ou `eval` chamado indiretamente passam.
+  O mesmo vale para um `catch` vazio escrito em mais de uma linha (`} catch (e) {` e `}` na linha
+  seguinte): como cada linha é analisada sozinha, ele não é detectado.
 - **Contexto limitado:** a análise é linha a linha, só do que foi adicionado. Ela não sabe se o valor
   vem de input do usuário, se a função é chamada em produção ou se o código removido quebrava algo.
 - **A lista de "valores seguros" corta dos dois lados:** `CHANGE_ME` deixou de ser acusado, mas um
