@@ -1,6 +1,6 @@
 {
   "name": "technova-api",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TechNova API - Sistema de gestão de pedidos",
   "main": "server.js",
   "scripts": {

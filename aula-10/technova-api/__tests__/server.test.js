@@ -60,3 +60,19 @@ describe('Orders API', () => {
     expect(res.body.error).toBeDefined();
   });
 });
+
+describe('Version', () => {
+  it('GET /version deve informar versão e commit em produção', async () => {
+    process.env.GITHUB_SHA = 'abc1234def';
+    const res = await request(app).get('/version');
+    expect(res.statusCode).toBe(200);
+    expect(res.body.version).toBe('1.1.0');
+    expect(res.body.commit).toBe('abc1234def');
+    delete process.env.GITHUB_SHA;
+  });
+
+  it('GET /version deve usar "local" fora do pipeline', async () => {
+    const res = await request(app).get('/version');
+    expect(res.body.commit).toBe('local');
+  });
+});

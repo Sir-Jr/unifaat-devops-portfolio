@@ -49,6 +49,16 @@ app.post('/api/orders', (req, res) => {
   res.status(201).json(newOrder);
 });
 
+// Versão em produção: qual commit e qual imagem estão no ar (rastreabilidade)
+app.get('/version', (req, res) => {
+  res.json({
+    version: '1.1.0',
+    commit: process.env.GITHUB_SHA || 'local',
+    image: process.env.IMAGE_TAG || 'local',
+    deployedAt: process.env.DEPLOY_TIME || null
+  });
+});
+
 // Só inicia o servidor se não estiver em modo de teste
 if (process.env.NODE_ENV !== 'test') {
   const PORT = process.env.PORT || 3000;
