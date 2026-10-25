@@ -1,0 +1,23 @@
+name: AWS Check
+
+# Teste rápido das credenciais de sessão do Learner Lab (secrets).
+# Rodar manualmente depois de atualizar os 3 secrets a cada nova sessão.
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}   # o Lab exige
+          aws-region: us-east-1
+      - name: aws sts get-caller-identity (conta mascarada)
+        run: |
+          echo "::add-mask::$(aws sts get-caller-identity --query Account --output text)"
+          aws sts get-caller-identity --query Arn --output text | sed -E 's#(assumed-role/[^/]+/).*#\1***#'
