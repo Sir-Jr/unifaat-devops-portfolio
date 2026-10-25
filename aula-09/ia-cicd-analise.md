@@ -121,10 +121,43 @@ não custam nada e não mandam o código para fora.
 
 ## 6. Quando confiar na IA e quando exigir review humano
 
-> ⚠️ **PENDENTE — sua análise.** Responda com a sua opinião:
-> 1. Em quais tipos de achado você aceitaria o veredito automático sem olhar?
-> 2. Que tipo de mudança deveria sempre passar por uma pessoa, mesmo com o review verde?
-> 3. Como ficaria o override quando o gate bloquear por falso positivo?
+### Onde o veredito automático basta
+
+- **Padrões com formato inconfundível:** chave AWS (`AKIA…`/`ASIA…`), chave privada, `eval()` e
+  `new Function()` em código novo. No PR de teste (#2) os 4 CRITICAL eram problemas reais, e na
+  varredura do portfólio inteiro essas regras não acusaram nada indevido. Aqui o bloqueio automático é
+  seguro: o custo de um falso positivo é baixo e o de deixar passar um segredo é alto.
+- **Achados de estilo (WARNING/INFO):** `console.log`, `var`, `TODO`. Eles não bloqueiam, só
+  informam; dá para aceitar ou ignorar sem discussão.
+
+A regra de **secret hardcoded** é a exceção dentro do CRITICAL: ela depende do nome da variável e
+gerou os 2 falsos positivos medidos (`CHANGE_ME` e `http_tokens = "required"`). Quando ela bloqueia,
+alguém precisa olhar antes de aceitar ou contestar.
+
+### O que sempre precisa de uma pessoa, mesmo com review verde
+
+- **Mudanças no próprio pipeline** (`.github/workflows/`, `.github/scripts/`): o `ai-review.js`
+  ignora os seus arquivos de regras para não se acusar, então uma alteração que enfraquece o gate passa
+  sem nenhum achado.
+- **Dependências e imagem base:** o PR #3 mudou só o `package-lock.json` e recebeu ✅ porque o lock é
+  ignorado; quem achou a vulnerabilidade do `body-parser` foi o `npm audit` do security scan. Da mesma
+  forma, as 26 vulnerabilidades do `openssl`/`zlib` estavam na imagem base, fora do diff, e só
+  apareceram no scan do ECR.
+- **Credenciais e permissões de CI:** passos que usam os secrets do Lab ou mudam `permissions:` não têm
+  padrão textual "errado", mas definem o que o workflow pode fazer na conta AWS e no repositório.
+- **Lógica de negócio:** regras de pedido, validações e respostas da API. A análise é linha a linha e
+  não sabe se o comportamento está certo.
+
+### Override quando o gate bloquear por falso positivo
+
+1. O autor responde no próprio PR explicando por que o achado é falso (ex.: valor de configuração,
+   não segredo).
+2. A correção vai para a regra, num PR separado e revisado — como foi feito com `CHANGE_ME` e
+   `required` na lista de valores seguros —, e não com o desligamento do gate.
+3. Em urgência, o administrador pode usar o *bypass* da proteção da `main` (a opção "Merge without
+   waiting for requirements" aparece no print do gate), registrando a justificativa no PR.
+4. Cada exceção na lista de valores seguros abre uma brecha (um segredo real com aquele valor também
+   passaria), então ela deve ser curta e revista de tempos em tempos.
 
 ## 7. Limitações observadas
 
