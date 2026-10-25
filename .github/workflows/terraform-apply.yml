@@ -1,0 +1,70 @@
+name: Terraform Apply
+
+# GitOps: o merge do PR na main é a aprovação humana; o apply é automático.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'aula-10/terraform/**.tf'
+      - 'aula-10/terraform/**.tfvars'
+      - 'aula-10/terraform/**.tftpl'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-aula10-state
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: aula-10/terraform
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  terraform-apply:
+    name: terraform-apply
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciais AWS (sessão do Learner Lab)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Mascarar o ID da conta nos logs
+        run: echo "::add-mask::$(aws sts get-caller-identity --query Account --output text)"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.0
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init -input=false -no-color
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false -no-color
+
+      - name: Outputs
+        run: |
+          terraform output -no-color
+          {
+            echo "### Terraform Apply — aula-10/terraform"
+            echo ""
+            echo "Commit \`${GITHUB_SHA::7}\` aplicado."
+            echo ""
+            echo '```'
+            terraform output -no-color
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

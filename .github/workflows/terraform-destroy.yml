@@ -1,0 +1,54 @@
+name: Terraform Destroy
+
+# Bônus: destroy separado, só manual e com aprovação no environment "destroy"
+# (Settings → Environments → destroy → Required reviewers).
+on:
+  workflow_dispatch:
+    inputs:
+      confirmacao:
+        description: 'Digite DESTRUIR para confirmar'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-aula10-state
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: aula-10/terraform
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  terraform-destroy:
+    name: terraform-destroy
+    if: inputs.confirmacao == 'DESTRUIR'
+    runs-on: ubuntu-latest
+    environment: destroy
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Mascarar o ID da conta nos logs
+        run: echo "::add-mask::$(aws sts get-caller-identity --query Account --output text)"
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.0
+          terraform_wrapper: false
+
+      - run: terraform init -input=false -no-color
+      - run: terraform plan -destroy -input=false -no-color -out=destroy.tfplan
+      - run: terraform apply -input=false -no-color destroy.tfplan

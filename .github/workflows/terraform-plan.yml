@@ -1,0 +1,187 @@
+name: Terraform Plan
+
+# GitOps: toda mudança de infraestrutura passa por PR. O plan roda aqui e
+# vira comentário no PR; o apply só acontece no merge (terraform-apply.yml).
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+    paths:
+      - 'aula-10/terraform/**.tf'
+      - 'aula-10/terraform/**.tfvars'
+      - 'aula-10/terraform/**.tftpl'
+      - '.github/workflows/terraform-plan.yml'
+
+permissions:
+  contents: read        # ler o código
+  pull-requests: write  # postar o plan como comentário
+
+# Plan e apply usam o mesmo state: nunca rodam em paralelo
+concurrency:
+  group: terraform-aula10-state
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: aula-10/terraform
+  TF_IN_AUTOMATION: 'true'
+  # rótulo do PR que autoriza um plan com destroy
+  DESTROY_LABEL: aprovado-destroy
+
+jobs:
+  terraform-plan:
+    name: terraform-plan
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar credenciais AWS (sessão do Learner Lab)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}   # o Lab exige o token de sessão
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Mascarar o ID da conta nos logs e no comentário
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "::add-mask::$ACCOUNT_ID"
+          echo "ACCOUNT_ID=$ACCOUNT_ID" >> "$GITHUB_ENV"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.0
+          terraform_wrapper: false
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -check -recursive -diff
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -input=false -no-color
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        continue-on-error: true
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          set -o pipefail
+          terraform plan -input=false -no-color -out=tfplan 2>&1 \
+            | sed "s/$ACCOUNT_ID/************/g" | tee /tmp/plan.txt
+        continue-on-error: true
+
+      # Bônus: plan com destroy exige aprovação extra (rótulo no PR)
+      - name: Detectar destroy no plan
+        id: destroy
+        if: steps.plan.outcome == 'success'
+        env:
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          DELETES=$(terraform show -json tfplan \
+            | jq '[.resource_changes[]? | select(.change.actions | index("delete"))] | length')
+          echo "deletes=$DELETES" >> "$GITHUB_OUTPUT"
+          if [ "$DELETES" -gt 0 ]; then
+            if echo "$LABELS" | jq -e --arg l "$DESTROY_LABEL" 'index($l)' >/dev/null; then
+              echo "approved=true" >> "$GITHUB_OUTPUT"
+              echo "::warning::Plan destrói $DELETES recurso(s) — autorizado pelo rótulo '$DESTROY_LABEL'."
+            else
+              echo "approved=false" >> "$GITHUB_OUTPUT"
+              echo "::error::Plan destrói $DELETES recurso(s). Adicione o rótulo '$DESTROY_LABEL' ao PR para autorizar."
+            fi
+          else
+            echo "approved=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Bônus: comentário atualizado (não duplicado) a cada push no PR
+      - name: Postar plan como comentário no PR
+        if: always() && steps.init.outcome != 'skipped'
+        uses: actions/github-script@v7
+        env:
+          FMT: ${{ steps.fmt.outcome }}
+          INIT: ${{ steps.init.outcome }}
+          VALIDATE: ${{ steps.validate.outcome }}
+          PLAN: ${{ steps.plan.outcome }}
+          DELETES: ${{ steps.destroy.outputs.deletes }}
+          DESTROY_OK: ${{ steps.destroy.outputs.approved }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- terraform-plan-aula10 -->';
+            const icon = (o) => o === 'success' ? '✅' : (o === 'skipped' || !o ? '⏭️' : '❌');
+            let plan = fs.existsSync('/tmp/plan.txt') ? fs.readFileSync('/tmp/plan.txt', 'utf8') : '(plan não executado)';
+            const MAX = 60000;
+            if (plan.length > MAX) {
+              plan = '... (início truncado — plan completo no log do workflow)\n' + plan.slice(-MAX);
+            }
+            const resumo = (plan.match(/^(Plan:.*|No changes\..*)$/m) || ['—'])[0];
+            const deletes = parseInt(process.env.DELETES || '0', 10);
+            let destroyLine = '';
+            if (deletes > 0) {
+              destroyLine = process.env.DESTROY_OK === 'true'
+                ? `\n> ⚠️ **${deletes} recurso(s) serão destruídos** — autorizado pelo rótulo \`${process.env.DESTROY_LABEL}\`.\n`
+                : `\n> ⛔ **${deletes} recurso(s) serão destruídos.** Adicione o rótulo \`${process.env.DESTROY_LABEL}\` ao PR para autorizar.\n`;
+            }
+            const body = [
+              marker,
+              '## 🏗️ Terraform Plan — `aula-10/terraform`',
+              '',
+              '| Etapa | Resultado |',
+              '|:--|:--:|',
+              `| \`terraform fmt -check\` | ${icon(process.env.FMT)} |`,
+              `| \`terraform init\` | ${icon(process.env.INIT)} |`,
+              `| \`terraform validate\` | ${icon(process.env.VALIDATE)} |`,
+              `| \`terraform plan\` | ${icon(process.env.PLAN)} |`,
+              '',
+              `**Resumo:** \`${resumo}\``,
+              destroyLine,
+              '<details><summary>Ver o plan completo</summary>',
+              '',
+              '```terraform',
+              plan,
+              '```',
+              '',
+              '</details>',
+              '',
+              `*Disparado por @${context.actor} no commit \`${context.payload.pull_request.head.sha.substring(0, 7)}\` · o apply roda automaticamente no merge para a \`main\`.*`
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, per_page: 100
+            });
+            const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, body
+              });
+            }
+
+      # PR não pode ser mergeado sem plan válido
+      - name: Falhar se fmt, validate ou plan falharam (ou destroy sem aprovação)
+        if: always()
+        run: |
+          ok=true
+          [ "${{ steps.fmt.outcome }}" = "success" ]      || { echo "::error::terraform fmt -check falhou"; ok=false; }
+          [ "${{ steps.validate.outcome }}" = "success" ] || { echo "::error::terraform validate falhou"; ok=false; }
+          [ "${{ steps.plan.outcome }}" = "success" ]     || { echo "::error::terraform plan falhou"; ok=false; }
+          [ "${{ steps.destroy.outputs.approved }}" != "false" ] || { echo "::error::destroy sem o rótulo de aprovação"; ok=false; }
+          $ok
