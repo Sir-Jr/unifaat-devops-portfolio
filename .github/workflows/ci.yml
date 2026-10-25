@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build da imagem (multi-stage)
-        run: docker build -t technova-api:local "$APP_DIR"
+        run: docker build --provenance=false --sbom=false -t technova-api:local "$APP_DIR"
 
       - name: Smoke test (/health)
         run: |

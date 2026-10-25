@@ -87,7 +87,9 @@ fi
 # ---- 3. Build (multi-stage) ----
 if [ "${ECR_SKIP_BUILD:-0}" != "1" ]; then
   echo "==> Build..."
-  docker build -t "$LOCAL_IMAGE" "$APP_DIR"
+  # sem atestados (provenance/SBOM): o push vira uma imagem simples, que o
+  # scan básico do ECR consegue analisar e a lifecycle policy não fragmenta
+  docker build --provenance=false --sbom=false -t "$LOCAL_IMAGE" "$APP_DIR"
 fi
 
 # ---- 4. Tag e push ----
