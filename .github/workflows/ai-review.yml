@@ -1,0 +1,110 @@
+name: AI Code Review
+
+# Revisa todo PR aberto/atualizado. Não roda em push direto na main
+# (para isso existe o ci.yml).
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# Um review por PR: um push novo cancela a análise anterior
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ai-review:
+    name: ai-review
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # histórico completo, necessário para o git diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Obter arquivos alterados e diff do PR
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          echo "Arquivos alterados:"
+          git diff --name-only "origin/$BASE_REF...HEAD"
+          # diff em arquivo (pode ser grande demais para uma variável)
+          git diff "origin/$BASE_REF...HEAD" > /tmp/pr-diff.txt
+          echo "Tamanho do diff: $(wc -l < /tmp/pr-diff.txt) linhas"
+
+      - name: Executar análise de código
+        id: analysis
+        run: node .github/scripts/ai-review.js
+        env:
+          DIFF_FILE: /tmp/pr-diff.txt
+          REPORT_FILE: /tmp/ai-review-result.md
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+      # Atualiza o comentário anterior do bot em vez de criar outro a cada push
+      - name: Postar ou atualizar comentário no PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = '/tmp/ai-review-result.md';
+            if (!fs.existsSync(path)) {
+              core.warning('Relatório não foi gerado; nada a postar.');
+              return;
+            }
+            const body = fs.readFileSync(path, 'utf8');
+            const marker = '<!-- ai-review-technova -->';
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100
+            });
+            const existing = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+              core.info(`Comentário atualizado: ${existing.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+              core.info('Novo comentário criado');
+            }
+
+      # Quality gate: CRITICAL reprova o check (e bloqueia o merge, pois
+      # "ai-review" é status check obrigatório na proteção da main).
+      # WARNING e INFO só aparecem no comentário.
+      - name: Quality gate
+        env:
+          CRITICAL: ${{ steps.analysis.outputs.critical }}
+          WARNING: ${{ steps.analysis.outputs.warning }}
+          INFO: ${{ steps.analysis.outputs.info }}
+        run: |
+          echo "CRITICAL=$CRITICAL WARNING=$WARNING INFO=$INFO"
+          if [ "${CRITICAL:-0}" -gt 0 ]; then
+            echo "::error::PR BLOQUEADO: $CRITICAL achado(s) CRITICAL. Corrija e faça push novamente."
+            exit 1
+          fi
+          echo "Quality gate aprovado (sem achados CRITICAL)."
